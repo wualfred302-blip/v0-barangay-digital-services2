@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { IDScanner } from "@/components/id-scanner"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -24,11 +25,36 @@ export default function RegisterPage() {
     agreedToTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [wasScanned, setWasScanned] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleIDDataExtracted = (data: {
+    fullName: string
+    birthDate: string
+    address: string
+    mobileNumber: string
+    age: string
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      fullName: data.fullName || prev.fullName,
+      mobileNumber: data.mobileNumber || prev.mobileNumber,
+      address: data.address || prev.address,
+    }))
+    setWasScanned(true)
+
+    // Scroll to form after a short delay
+    setTimeout(() => {
+      document.getElementById("registration-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    }, 300)
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -64,7 +90,17 @@ export default function RegisterPage() {
             <CardDescription>Create your account</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister}>
+            <IDScanner onDataExtracted={handleIDDataExtracted} disabled={isLoading} />
+
+            {wasScanned && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-sm text-emerald-700 font-medium text-center">
+                  ID scanned successfully! Review and complete the details below.
+                </p>
+              </div>
+            )}
+
+            <form id="registration-form" onSubmit={handleRegister}>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="fullName">Full Name (as appears on ID)</Label>
@@ -75,6 +111,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="Juan Dela Cruz"
                     disabled={isLoading}
+                    className={wasScanned && formData.fullName ? "border-emerald-300 bg-emerald-50/50" : ""}
                   />
                 </div>
 
@@ -88,6 +125,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="+63 912 345 6789"
                     disabled={isLoading}
+                    className={wasScanned && formData.mobileNumber ? "border-emerald-300 bg-emerald-50/50" : ""}
                   />
                 </div>
 
@@ -100,6 +138,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="Purok 1, Barangay Mawaque"
                     disabled={isLoading}
+                    className={wasScanned && formData.address ? "border-emerald-300 bg-emerald-50/50" : ""}
                   />
                 </div>
 
