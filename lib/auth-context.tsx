@@ -3,9 +3,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 interface User {
-  userId: string
-  mobileNumber: string
+  id?: string
   fullName: string
+  mobileNumber: string
   email: string
   address: string
 }
@@ -13,9 +13,10 @@ interface User {
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  isLoading: boolean // Added loading state to prevent redirect race condition
+  isLoading: boolean
   login: (userData: User) => void
   logout: () => void
+  updateUser: (userData: Partial<User>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // Start with loading true
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const storedUser = localStorage.getItem("barangay_user")
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(JSON.parse(storedUser))
       setIsAuthenticated(true)
     }
-    setIsLoading(false) // Done checking
+    setIsLoading(false)
   }, [])
 
   const login = (userData: User) => {
@@ -50,8 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("barangay_auth")
   }
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData }
+      setUser(updatedUser)
+      localStorage.setItem("barangay_user", JSON.stringify(updatedUser))
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateUser }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 

@@ -2,9 +2,9 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle } from "lucide-react"
+import { Check } from "lucide-react"
 
 export default function RegisterSuccessPage() {
   const router = useRouter()
@@ -13,24 +13,39 @@ export default function RegisterSuccessPage() {
     const timer = setTimeout(() => {
       router.push("/dashboard")
     }, 2000)
-
     return () => clearTimeout(timer)
   }, [router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white p-6">
-      <Card className="w-full max-w-md">
-        <CardHeader className="items-center">
-          <CheckCircle className="mb-4 h-16 w-16 text-green-600 animate-bounce" />
-          <CardTitle className="text-2xl">Registration Successful!</CardTitle>
-          <CardDescription>Redirecting to dashboard...</CardDescription>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="mb-6 text-sm text-gray-600">
+    <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB] px-6">
+      <Card className="w-full max-w-[400px] rounded-2xl border-0 shadow-[0_4px_6px_rgba(0,0,0,0.07)]">
+        <CardContent className="px-8 py-12">
+          {/* Static Checkmark Icon */}
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#10B981]">
+              <Check className="h-8 w-8 text-[#10B981]" strokeWidth={3} />
+            </div>
+          </div>
+
+          {/* Heading */}
+          <h1 className="mb-3 text-center text-[28px] font-bold tracking-tight text-[#111827]">
+            Registration Successful!
+          </h1>
+
+          {/* Status */}
+          <p className="mb-6 text-center text-base text-[#6B7280]">Redirecting to dashboard...</p>
+
+          {/* Body */}
+          <p className="mb-8 text-center text-[15px] leading-relaxed text-[#374151]">
             Your account has been created successfully. You will be redirected shortly.
           </p>
-          <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-            <a onClick={() => router.push("/dashboard")}>Go to Dashboard</a>
+
+          {/* Button */}
+          <Button
+            onClick={() => router.push("/dashboard")}
+            className="h-[52px] w-full rounded-[10px] bg-[#10B981] text-base font-semibold text-white hover:bg-[#059669]"
+          >
+            Go to Dashboard
           </Button>
         </CardContent>
       </Card>

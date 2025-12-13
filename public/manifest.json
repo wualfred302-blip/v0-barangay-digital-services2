@@ -1,24 +1,36 @@
 {
-  "name": "Barangay Mawaque Digital Services",
-  "short_name": "Brgy Mawaque",
-  "description": "Request barangay certificates online",
+  "name": "Barangay Mawaque Linkod App",
+  "short_name": "Mawaque Linkod",
+  "description": "Request barangay certificates online - Fast, convenient, and secure",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#16a34a",
+  "background_color": "#FFFFFF",
+  "theme_color": "#10B981",
   "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
