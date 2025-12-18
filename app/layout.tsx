@@ -4,6 +4,8 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { CertificateProvider } from "@/lib/certificate-context"
+import { BlotterProvider } from "@/lib/blotter-context"
+import { AnnouncementsProvider } from "@/lib/announcements-context"
 
 import { Inter, Inter as V0_Font_Inter, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
 
@@ -50,7 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
-          <CertificateProvider>{children}</CertificateProvider>
+          <CertificateProvider>
+            <BlotterProvider>
+              <AnnouncementsProvider>{children}</AnnouncementsProvider>
+            </BlotterProvider>
+          </CertificateProvider>
         </AuthProvider>
         <Analytics />
       </body>

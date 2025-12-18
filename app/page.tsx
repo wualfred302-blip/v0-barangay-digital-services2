@@ -1,14 +1,19 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, LogIn } from "lucide-react"
+import { ArrowRight, LogIn, Shield } from "lucide-react"
 
 export default function WelcomePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-8">
       <div className="flex w-full max-w-md flex-col items-center">
         <div className="relative mb-6 h-28 w-28">
-          <Image src="/images/image.png" alt="Barangay Mawaque Seal" fill className="object-contain drop-shadow-lg" />
+          <Image
+            src="/images/mawaque-20logo.jpeg"
+            alt="Barangay Mawaque Seal"
+            fill
+            className="rounded-full object-contain drop-shadow-lg"
+          />
         </div>
 
         <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">Barangay Mawaque</h1>
@@ -44,6 +49,14 @@ export default function WelcomePage() {
         </div>
 
         <p className="mt-8 text-center text-sm font-medium text-gray-400">For residents of Mabalacat, Pampanga</p>
+
+        <Link
+          href="/staff/login"
+          className="mt-6 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+        >
+          <Shield className="h-4 w-4" />
+          Staff Portal
+        </Link>
       </div>
     </div>
   )

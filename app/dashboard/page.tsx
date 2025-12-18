@@ -5,12 +5,25 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
+import { useAnnouncements } from "@/lib/announcements-context"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileText, ClipboardList, User, Settings, Grid3X3, Bell, Phone, MapPin, ChevronRight } from "lucide-react"
+import {
+  FileText,
+  ClipboardList,
+  User,
+  AlertTriangle,
+  Megaphone,
+  Bell,
+  Phone,
+  MapPin,
+  ChevronRight,
+  Pin,
+} from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
+  const { getPublishedAnnouncements } = useAnnouncements()
   const router = useRouter()
 
   useEffect(() => {
@@ -34,13 +47,15 @@ export default function DashboardPage() {
     .toUpperCase()
     .slice(0, 2)
 
+  const announcements = getPublishedAnnouncements().slice(0, 3)
+
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
       {/* Header */}
       <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[#E5E7EB] bg-white px-5">
         <div className="flex items-center gap-3">
           <div className="relative h-10 w-10">
-            <Image src="/images/image.png" alt="Barangay Seal" fill className="object-contain" />
+            <Image src="/images/mawaque-20logo.jpeg" alt="Barangay Seal" fill className="rounded-full object-contain" />
           </div>
           <div>
             <p className="text-base font-semibold text-[#111827]">Barangay Mawaque</p>
@@ -48,16 +63,16 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-[#374151] transition-colors hover:text-[#111827]">
+          <Link href="/announcements" className="text-[#374151] transition-colors hover:text-[#111827]">
             <Bell className="h-6 w-6" />
-          </button>
+          </Link>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 px-5 pb-28 pt-5">
         {/* Welcome Card */}
-        <Card className="mb-8 rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
+        <Card className="mb-6 rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -74,7 +89,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              {/* Avatar */}
               <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#E0F2FE]">
                 <span className="text-2xl font-semibold text-[#0369A1]">{initials}</span>
               </div>
@@ -82,23 +96,75 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* Announcements Section */}
+        {announcements.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#111827]">Announcements</h3>
+              <Link href="/announcements" className="text-sm font-medium text-emerald-600">
+                View All
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {announcements.map((ann) => (
+                <Card
+                  key={ann.id}
+                  className={`border-0 shadow-sm ${ann.priority === "urgent" ? "bg-red-50" : ann.isPinned ? "bg-amber-50" : "bg-white"}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                          ann.priority === "urgent"
+                            ? "bg-red-100"
+                            : ann.category === "health"
+                              ? "bg-emerald-100"
+                              : ann.category === "event"
+                                ? "bg-blue-100"
+                                : "bg-amber-100"
+                        }`}
+                      >
+                        <Megaphone
+                          className={`h-4 w-4 ${
+                            ann.priority === "urgent"
+                              ? "text-red-600"
+                              : ann.category === "health"
+                                ? "text-emerald-600"
+                                : ann.category === "event"
+                                  ? "text-blue-600"
+                                  : "text-amber-600"
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-slate-900">{ann.title}</p>
+                          {ann.isPinned && <Pin className="h-3 w-3 text-amber-500" />}
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-600">{ann.content}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Section Heading */}
-        <h3 className="mb-4 text-[22px] font-bold text-[#111827]">Available Services</h3>
+        <h3 className="mb-4 text-[22px] font-bold text-[#111827]">Services</h3>
 
         {/* Main Service Card - Request Certificate */}
         <Link href="/request" className="block">
           <Card className="group mb-4 h-[160px] overflow-hidden rounded-[20px] border-0 bg-gradient-to-br from-[#10B981] to-[#059669] shadow-[0_4px_6px_rgba(16,185,129,0.15)] transition-all active:scale-[0.98]">
             <CardContent className="relative flex h-full flex-col justify-between p-6">
-              {/* Icon */}
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20">
                 <FileText className="h-6 w-6 text-white" />
               </div>
-              {/* Text */}
               <div>
                 <h4 className="text-[22px] font-bold text-white">Request Certificate</h4>
                 <p className="mt-1 text-sm font-medium text-white/90">Clearance, Residency, Indigency</p>
               </div>
-              {/* Arrow */}
               <ChevronRight className="absolute bottom-6 right-6 h-6 w-6 text-white" />
             </CardContent>
           </Card>
@@ -120,43 +186,43 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/profile" className="block">
+          <Link href="/blotter" className="block">
+            <Card className="h-[120px] rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_6px_rgba(0,0,0,0.07)] active:scale-[0.98]">
+              <CardContent className="flex h-full flex-col justify-between p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FEE2E2]">
+                  <AlertTriangle className="h-5 w-5 text-[#DC2626]" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-[#111827]">File Blotter</p>
+                  <p className="mt-1 text-[13px] text-[#6B7280]">Report incident</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/announcements" className="block">
             <Card className="h-[120px] rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_6px_rgba(0,0,0,0.07)] active:scale-[0.98]">
               <CardContent className="flex h-full flex-col justify-between p-5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#DBEAFE]">
-                  <User className="h-5 w-5 text-[#2563EB]" />
+                  <Megaphone className="h-5 w-5 text-[#2563EB]" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-[#111827]">Announcements</p>
+                  <p className="mt-1 text-[13px] text-[#6B7280]">Latest news</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/profile" className="block">
+            <Card className="h-[120px] rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_6px_rgba(0,0,0,0.07)] active:scale-[0.98]">
+              <CardContent className="flex h-full flex-col justify-between p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E0E7FF]">
+                  <User className="h-5 w-5 text-[#4F46E5]" />
                 </div>
                 <div>
                   <p className="text-base font-semibold text-[#111827]">Profile</p>
                   <p className="mt-1 text-[13px] text-[#6B7280]">Update info</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/install" className="block">
-            <Card className="h-[120px] rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_6px_rgba(0,0,0,0.07)] active:scale-[0.98]">
-              <CardContent className="flex h-full flex-col justify-between p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E0E7FF]">
-                  <Settings className="h-5 w-5 text-[#4F46E5]" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-[#111827]">Settings</p>
-                  <p className="mt-1 text-[13px] text-[#6B7280]">Preferences</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/install" className="block">
-            <Card className="h-[120px] rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition-shadow hover:shadow-[0_4px_6px_rgba(0,0,0,0.07)] active:scale-[0.98]">
-              <CardContent className="flex h-full flex-col justify-between p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3E8FF]">
-                  <Grid3X3 className="h-5 w-5 text-[#9333EA]" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-[#111827]">More</p>
-                  <p className="mt-1 text-[13px] text-[#6B7280]">Install app</p>
                 </div>
               </CardContent>
             </Card>
