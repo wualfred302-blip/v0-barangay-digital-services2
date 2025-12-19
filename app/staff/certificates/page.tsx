@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -23,8 +23,66 @@ import {
   Calendar,
   DollarSign,
   X,
+  Download,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+const exportToCSV = (certificates: CertificateRequest[]) => {
+  const headers = [
+    "Serial Number",
+    "Certificate Type",
+    "Resident Name",
+    "Purpose",
+    "Status",
+    "Created Date",
+    "Amount",
+    "Payment Status",
+    "Purok",
+    "Request Type",
+  ]
+
+  const rows = certificates.map((cert) => {
+    const status = cert.status.charAt(0).toUpperCase() + cert.status.slice(1)
+    const date = new Date(cert.createdAt).toLocaleDateString("en-PH")
+    const amount = `₱${cert.amount.toFixed(2)}`
+    const paymentStatus = cert.paymentReference ? "Paid" : "Unpaid"
+    const residentName = cert.residentName || "N/A"
+    const purok = cert.purok || "N/A"
+
+    return [
+      cert.serialNumber,
+      cert.certificateType,
+      residentName,
+      cert.purpose,
+      status,
+      date,
+      amount,
+      paymentStatus,
+      purok,
+      cert.requestType,
+    ].map((field) => {
+      const fieldStr = String(field)
+      if (fieldStr.includes(",") || fieldStr.includes('"') || fieldStr.includes("\n")) {
+        return `"${fieldStr.replace(/"/g, '""')}"`
+      }
+      return fieldStr
+    })
+  })
+
+  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n")
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)
+  link.setAttribute("href", url)
+  link.setAttribute("download", `certificates_export_${timestamp}.csv`)
+  link.style.visibility = "hidden"
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 
 export default function StaffCertificatesPage() {
   const router = useRouter()
@@ -42,6 +100,8 @@ export default function StaffCertificatesPage() {
   const [viewMode, setViewMode] = useState<"list" | "kanban" | "calendar">("list")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   const filteredCerts = useMemo(() => {
     return certificates.filter((cert) => {
@@ -77,6 +137,48 @@ export default function StaffCertificatesPage() {
 
   const processingCerts = filteredCerts.filter((c) => c.status === "processing")
   const readyCerts = filteredCerts.filter((c) => c.status === "ready")
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + E: Export selected certificates
+      if ((e.ctrlKey || e.metaKey) && e.key === "e") {
+        if (selectedIds.length > 0) {
+          e.preventDefault()
+          const selectedCerts = certificates.filter((c) => selectedIds.includes(c.id))
+          handleExport(selectedCerts)
+        }
+      }
+
+      // Ctrl/Cmd + A: Select all processing certificates
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        if (processingCerts.length > 0) {
+          e.preventDefault()
+          setSelectedIds(processingCerts.map((c) => c.id))
+        }
+      }
+
+      // Escape: Clear selection or date filter
+      if (e.key === "Escape") {
+        if (selectedIds.length > 0) {
+          setSelectedIds([])
+        } else if (selectedDate) {
+          setSelectedDate(null)
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [selectedIds, selectedDate, certificates, processingCerts])
+
+  const handleExport = (certs: CertificateRequest[]) => {
+    setIsExporting(true)
+    setTimeout(() => {
+      exportToCSV(certs)
+      setIsExporting(false)
+    }, 500)
+  }
+
 
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
     if (key === "search") return value !== ""
@@ -207,13 +309,30 @@ export default function StaffCertificatesPage() {
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h3 className="font-semibold text-slate-900">
-          {currentMonth.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-slate-900">
+            {currentMonth.toLocaleDateString("en-PH", { month: "long", year: "numeric" })}
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            disabled={isExporting}
+            onClick={() => {
+              const monthCerts = filteredCerts.filter((cert) => {
+                const d = new Date(cert.createdAt)
+                return d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear()
+              })
+              handleExport(monthCerts)
+            }}
+          >
+            {isExporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+          </Button>
+        </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+          onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -246,10 +365,12 @@ export default function StaffCertificatesPage() {
           return (
             <button
               key={day}
+              onClick={() => setSelectedDate(date)}
               className={cn(
                 "aspect-square rounded-lg border p-1 text-left transition-colors hover:border-emerald-500",
                 certs.length > 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-200",
                 isToday && "ring-2 ring-emerald-500",
+                selectedDate?.toDateString() === dateStr && "ring-2 ring-emerald-600",
               )}
             >
               <div className={cn("text-xs font-medium", isToday ? "text-emerald-600" : "text-slate-900")}>{day}</div>
@@ -265,12 +386,33 @@ export default function StaffCertificatesPage() {
 
       {/* Selected date certificates */}
       <div className="mt-6">
-        <h4 className="mb-3 text-sm font-semibold text-slate-900">All Certificates This Month</h4>
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-slate-900">
+            {selectedDate
+              ? `Certificates on ${selectedDate.toLocaleDateString("en-PH", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}`
+              : "All Certificates This Month"}
+          </h4>
+          {selectedDate && (
+            <Button variant="ghost" size="sm" onClick={() => setSelectedDate(null)} className="h-7 text-xs">
+              View all
+            </Button>
+          )}
+        </div>
         <div className="space-y-2">
-          {filteredCerts.slice(0, 10).map((cert) => (
+          {(selectedDate
+            ? filteredCerts.filter((cert) => new Date(cert.createdAt).toDateString() === selectedDate.toDateString())
+            : filteredCerts.slice(0, 10)
+          ).map((cert) => (
             <CertificateCard key={cert.id} cert={cert} compact />
           ))}
-          {filteredCerts.length === 0 && <p className="py-4 text-center text-sm text-slate-500">No certificates</p>}
+          {(selectedDate
+            ? filteredCerts.filter((cert) => new Date(cert.createdAt).toDateString() === selectedDate.toDateString())
+            : filteredCerts
+          ).length === 0 && <p className="py-4 text-center text-sm text-slate-500">No certificates</p>}
         </div>
       </div>
     </div>
@@ -399,23 +541,61 @@ export default function StaffCertificatesPage() {
           </Select>
         </div>
 
-        {/* Clear filters */}
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs text-slate-500">
-            <X className="mr-1 h-3 w-3" />
-            Clear all filters ({filteredCerts.length} results)
-          </Button>
-        )}
+        {/* Filter actions */}
+        <div className="flex items-center justify-between">
+          {hasActiveFilters ? (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs text-slate-500">
+              <X className="mr-1 h-3 w-3" />
+              Clear all filters ({filteredCerts.length} results)
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {filteredCerts.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isExporting}
+              onClick={() => handleExport(filteredCerts)}
+              className="h-8 text-xs text-slate-600"
+            >
+              {isExporting ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Download className="mr-1 h-3 w-3" />
+              )}
+              Export all filtered results ({filteredCerts.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       {selectedIds.length > 0 && (
         <div className="sticky top-14 z-10 border-b border-emerald-200 bg-emerald-50 px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm font-medium text-emerald-900">{selectedIds.length} selected</span>
             <div className="flex items-center gap-2">
               <Button size="sm" onClick={handleBulkApprove} className="bg-emerald-600 hover:bg-emerald-700">
                 <CheckCircle2 className="mr-1 h-4 w-4" />
                 Approve All
+              </Button>
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700"
+                disabled={isExporting}
+                onClick={() => {
+                  const selectedCerts = certificates.filter((c) => selectedIds.includes(c.id))
+                  handleExport(selectedCerts)
+                }}
+              >
+                {isExporting ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-1 h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Export to CSV</span>
+                <span className="sm:hidden">Export</span>
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])} className="text-slate-600">
                 Clear

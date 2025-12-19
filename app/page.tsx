@@ -1,58 +1,64 @@
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, LogIn, Shield } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
-export default function WelcomePage() {
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-emerald-50 to-white px-6">
-      <div className="flex w-full max-w-sm flex-col items-center">
-        <div className="relative mb-6 h-24 w-24">
-          <Image src="/images/mawaque-logo.png" alt="Barangay Mawaque Seal" fill className="object-contain" />
+    <main className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-12 md:py-24 lg:py-32">
+        <div className="flex flex-col items-center justify-between gap-12 md:flex-row md:gap-16">
+          {/* LEFT: Logo */}
+          <div className="relative w-full md:w-1/2 flex justify-center md:justify-end">
+            <div className="relative w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80">
+              <Image
+                src="/images/logo.png"
+                alt="Barangay Mawague Seal"
+                fill
+                priority
+                className="object-contain shadow-lg rounded-3xl"
+              />
+            </div>
+          </div>
+
+          {/* RIGHT: Content */}
+          <div className="w-full md:w-1/2 text-center md:text-left space-y-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 leading-tight">
+                Barangay Mawague
+              </h1>
+              <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent text-4xl md:text-5xl lg:text-6xl font-black leading-tight">
+                Linkod App
+              </div>
+              <p className="text-xl md:text-2xl font-semibold text-slate-700">
+                Digital Services
+              </p>
+            </div>
+
+            <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
+              Request barangay certificates and documents online. Fast,
+              convenient, and secure.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
+              <Button
+                asChild
+                className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-lg shadow-lg active:scale-[0.98] transition-all"
+              >
+                <Link href="/register">
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              <Link
+                href="/login"
+                className="text-emerald-600 hover:text-emerald-700 font-semibold underline decoration-2 decoration-emerald-500 underline-offset-4 transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
         </div>
-
-        <h1 className="text-center text-2xl font-bold tracking-tight text-gray-900">Barangay Mawaque</h1>
-        <h2 className="text-center text-2xl font-bold tracking-tight text-emerald-600">Linkod App</h2>
-
-        <p className="mt-2 text-center text-sm font-medium text-gray-500">Digital Services</p>
-
-        <p className="mt-4 max-w-[280px] text-center text-sm leading-relaxed text-gray-600">
-          Request barangay certificates and documents online. Fast, convenient, and secure.
-        </p>
-
-        <div className="mt-6 flex w-full flex-col gap-3">
-          <Button
-            asChild
-            className="h-12 w-full rounded-xl bg-emerald-500 text-sm font-semibold text-white hover:bg-emerald-600 active:scale-[0.98]"
-          >
-            <Link href="/register" className="flex items-center justify-center gap-2">
-              Get Started
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-
-          <Button
-            asChild
-            variant="outline"
-            className="h-12 w-full rounded-xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-900 hover:bg-gray-50 active:scale-[0.98]"
-          >
-            <Link href="/login" className="flex items-center justify-center gap-2">
-              <LogIn className="h-4 w-4" />
-              Sign In
-            </Link>
-          </Button>
-        </div>
-
-        <p className="mt-6 text-center text-xs font-medium text-gray-400">For residents of Mabalacat, Pampanga</p>
-
-        <Link
-          href="/staff/login"
-          className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700"
-        >
-          <Shield className="h-4 w-4" />
-          Staff Portal
-        </Link>
       </div>
-    </div>
-  )
+    </main>
+  );
 }

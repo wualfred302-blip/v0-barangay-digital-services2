@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
+import { ResidentsProvider } from "@/lib/residents-context"
 import { CertificateProvider } from "@/lib/certificate-context"
 import { BlotterProvider } from "@/lib/blotter-context"
 import { AnnouncementsProvider } from "@/lib/announcements-context"
@@ -21,7 +22,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Barangay Mawaque Linkod App",
+  title: "Barangay Mawague Linkod App",
   description: "Request barangay certificates online - Fast, convenient, and secure",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -52,11 +53,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
-          <CertificateProvider>
-            <BlotterProvider>
-              <AnnouncementsProvider>{children}</AnnouncementsProvider>
-            </BlotterProvider>
-          </CertificateProvider>
+          <ResidentsProvider>
+            <CertificateProvider>
+              <BlotterProvider>
+                <AnnouncementsProvider>{children}</AnnouncementsProvider>
+              </BlotterProvider>
+            </CertificateProvider>
+          </ResidentsProvider>
         </AuthProvider>
         <Analytics />
       </body>
