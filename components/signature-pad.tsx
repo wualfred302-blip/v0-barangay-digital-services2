@@ -1,8 +1,8 @@
 "use client"
 
-import { useRef, useState, useEffect, type MouseEvent, type TouchEvent } from "react"
+import { useRef, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Eraser } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 interface SignaturePadProps {
   onSave: (signature: string) => void
@@ -12,136 +12,133 @@ interface SignaturePadProps {
 export function SignaturePad({ onSave, onClear }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
-  
-  // Set canvas size on mount and resize
+  const [lastX, setLastX] = useState(0)
+  const [lastY, setLastY] = useState(0)
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const resizeCanvas = () => {
-      const parent = canvas.parentElement
-      if (parent) {
-        const scale = window.devicePixelRatio || 1
-        
-        // Set display size (css pixels)
-        canvas.style.width = "100%"
-        canvas.style.height = "200px"
-        
-        // Set actual size in memory (scaled to account for extra pixel density)
-        canvas.width = parent.clientWidth * scale
-        canvas.height = 200 * scale
-        
-        // Normalize coordinate system to use css pixels
-        const ctx = canvas.getContext("2d")
-        if (ctx) {
-            ctx.scale(scale, scale)
-            ctx.strokeStyle = "#000000"
-            ctx.lineWidth = 2
-            ctx.lineCap = "round"
-            ctx.lineJoin = "round"
-        }
-      }
-    }
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
-    resizeCanvas()
-    window.addEventListener("resize", resizeCanvas)
+    // Set canvas size (scaled for retina displays)
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * 2
+    canvas.height = rect.height * 2
     
-    return () => {
-      window.removeEventListener("resize", resizeCanvas)
-    }
+    // Scale context to match
+    ctx.scale(2, 2)
+    
+    // Set line styles
+    ctx.strokeStyle = "#000000"
+    ctx.lineWidth = 2
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
   }, [])
 
-  const getCoordinates = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
-    const rect = canvas.getBoundingClientRect()
-    let clientX, clientY
-
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX
-      clientY = e.touches[0].clientY
-    } else {
-      clientX = (e as MouseEvent).clientX
-      clientY = (e as MouseEvent).clientY
-    }
-
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    }
-  }
-
-  const startDrawing = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+  // Mouse Events
+  const handleMouseDown = (e: React.MouseEvent) => {
     setIsDrawing(true)
-    const canvas = canvasRef.current
-    if (!canvas) return
+    setLastX(e.nativeEvent.offsetX)
+    setLastY(e.nativeEvent.offsetY)
+  }
 
-    const ctx = canvas.getContext("2d")
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDrawing || !canvasRef.current) return
+    const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
-    
-    const { x, y } = getCoordinates(e, canvas)
+
     ctx.beginPath()
-    ctx.moveTo(x, y)
+    ctx.moveTo(lastX, lastY)
+    ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+    ctx.stroke()
+    
+    setLastX(e.nativeEvent.offsetX)
+    setLastY(e.nativeEvent.offsetY)
   }
 
-  const draw = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
+  const handleMouseUp = () => {
+    setIsDrawing(false)
+    saveSignature()
+  }
 
-    const ctx = canvas.getContext("2d")
+  // Touch Events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent scrolling
+    setIsDrawing(true)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const touch = e.touches[0]
+    setLastX(touch.clientX - rect.left)
+    setLastY(touch.clientY - rect.top)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault() // Prevent scrolling
+    if (!isDrawing || !canvasRef.current) return
+    const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
 
-    const { x, y } = getCoordinates(e, canvas)
-    ctx.lineTo(x, y)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const touch = e.touches[0]
+    const currentX = touch.clientX - rect.left
+    const currentY = touch.clientY - rect.top
+
+    ctx.beginPath()
+    ctx.moveTo(lastX, lastY)
+    ctx.lineTo(currentX, currentY)
     ctx.stroke()
+    
+    setLastX(currentX)
+    setLastY(currentY)
   }
 
-  const stopDrawing = () => {
-    if (!isDrawing) return
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault()
     setIsDrawing(false)
-    const canvas = canvasRef.current
-    if (canvas) {
-        onSave(canvas.toDataURL('image/png'))
-    }
+    saveSignature()
+  }
+
+  const saveSignature = () => {
+    if (!canvasRef.current) return
+    const signature = canvasRef.current.toDataURL("image/png")
+    onSave(signature)
   }
 
   const handleClear = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext("2d")
+    if (!canvasRef.current) return
+    const ctx = canvasRef.current.getContext("2d")
     if (!ctx) return
     
-    const scale = window.devicePixelRatio || 1
-    ctx.clearRect(0, 0, canvas.width / scale, canvas.height / scale)
-    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     onClear()
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="relative rounded-lg border-2 border-slate-300 overflow-hidden bg-white">
+    <div className="relative w-full">
+      <div className="overflow-hidden rounded-lg border-2 border-slate-300 bg-white shadow-sm">
         <canvas
-            ref={canvasRef}
-            className="block touch-none cursor-crosshair"
-            style={{ width: '100%', height: '200px' }}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
+          ref={canvasRef}
+          className="h-[200px] w-full cursor-crosshair touch-none bg-white"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         />
       </div>
-      <div className="flex justify-end">
+      <div className="mt-2 flex justify-end">
         <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleClear}
-            className="text-slate-500 hover:text-slate-700"
-            type="button"
+          variant="ghost" 
+          size="sm" 
+          onClick={handleClear}
+          className="text-slate-500 hover:text-slate-900"
         >
-            <Eraser className="mr-2 h-4 w-4" />
-            Clear Signature
+          <RefreshCw className="mr-1 h-3 w-3" />
+          Reset Signature
         </Button>
       </div>
     </div>

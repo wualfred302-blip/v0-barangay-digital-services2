@@ -1,6 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode, memo, useCallback, useMemo } from "react"
+import { usePayment } from "./payment-context"
 
 export interface CertificateRequest {
   id: string
@@ -10,6 +11,7 @@ export interface CertificateRequest {
   requestType: "regular" | "rush"
   amount: number
   paymentReference: string
+  paymentTransactionId?: string
   serialNumber: string
   status: "processing" | "ready"
   createdAt: string
@@ -39,28 +41,47 @@ interface CertificateContextType {
     },
   ) => void
   getCertificate: (id: string) => CertificateRequest | undefined
+  getVerificationUrl: (serialNumber: string) => string
+  getCertificatesByPaymentStatus: (status: "pending" | "success" | "failed") => CertificateRequest[]
 }
 
 const CertificateContext = createContext<CertificateContextType | undefined>(undefined)
 
-export function CertificateProvider({ children }: { children: ReactNode }) {
+export const CertificateProvider = memo(({ children }: { children: ReactNode }) => {
   const [certificates, setCertificates] = useState<CertificateRequest[]>([])
   const [currentRequest, setCurrentRequest] = useState<Partial<CertificateRequest> | null>(null)
+  const { payments } = usePayment()
 
+  // Async load from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("barangay_certificates")
-    if (stored) {
-      setCertificates(JSON.parse(stored))
+    const load = async () => {
+      try {
+        const stored = localStorage.getItem("barangay_certificates")
+        if (stored) {
+          setCertificates(JSON.parse(stored))
+        }
+      } catch (e) {
+        console.error("Failed to parse stored certificates:", e)
+        localStorage.removeItem("barangay_certificates")
+      }
     }
+    load()
   }, [])
 
-  const addCertificate = (cert: CertificateRequest) => {
-    const updated = [...certificates, cert]
-    setCertificates(updated)
-    localStorage.setItem("barangay_certificates", JSON.stringify(updated))
-  }
+  // Debounced save to localStorage
+  useEffect(() => {
+    if (certificates.length === 0) return
+    const timeout = setTimeout(() => {
+      localStorage.setItem("barangay_certificates", JSON.stringify(certificates, null, 0))
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [certificates])
 
-  const updateCertificateStatus = (
+  const addCertificate = useCallback((cert: CertificateRequest) => {
+    setCertificates(prev => [...prev, cert])
+  }, [])
+
+  const updateCertificateStatus = useCallback((
     id: string,
     status: "processing" | "ready",
     signatureData?: {
@@ -69,7 +90,7 @@ export function CertificateProvider({ children }: { children: ReactNode }) {
       signedByRole: string
     },
   ) => {
-    const updated = certificates.map((cert) =>
+    setCertificates(prev => prev.map((cert) =>
       cert.id === id
         ? {
             ...cert,
@@ -83,30 +104,51 @@ export function CertificateProvider({ children }: { children: ReactNode }) {
             }),
           }
         : cert,
-    )
-    setCertificates(updated)
-    localStorage.setItem("barangay_certificates", JSON.stringify(updated))
-  }
+    ))
+  }, [])
 
-  const getCertificate = (id: string) => {
+  const getCertificate = useCallback((id: string) => {
     return certificates.find((cert) => cert.id === id)
-  }
+  }, [certificates])
+
+  const getVerificationUrl = useCallback((serialNumber: string) => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://mawaque.gov.ph"
+    return `${baseUrl}/verify/${serialNumber}`
+  }, [])
+
+  const getCertificatesByPaymentStatus = useCallback((status: "pending" | "success" | "failed") => {
+    return certificates.filter((cert) => {
+      if (!cert.paymentTransactionId) return false
+      const payment = payments.find((p) => p.id === cert.paymentTransactionId)
+      return payment?.status === status
+    })
+  }, [certificates, payments])
+
+  const value = useMemo(() => ({
+    certificates,
+    currentRequest,
+    setCurrentRequest,
+    addCertificate,
+    updateCertificateStatus,
+    getCertificate,
+    getVerificationUrl,
+    getCertificatesByPaymentStatus,
+  }), [
+    certificates,
+    currentRequest,
+    addCertificate,
+    updateCertificateStatus,
+    getCertificate,
+    getVerificationUrl,
+    getCertificatesByPaymentStatus
+  ])
 
   return (
-    <CertificateContext.Provider
-      value={{
-        certificates,
-        currentRequest,
-        setCurrentRequest,
-        addCertificate,
-        updateCertificateStatus,
-        getCertificate,
-      }}
-    >
+    <CertificateContext.Provider value={value}>
       {children}
     </CertificateContext.Provider>
   )
-}
+})
 
 export function useCertificates() {
   const context = useContext(CertificateContext)

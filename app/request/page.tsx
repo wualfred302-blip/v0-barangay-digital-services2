@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Minus, Plus, Clock, Zap } from "lucide-react"
 import { useCertificates } from "@/lib/certificate-context"
+import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 
 const certificateTypes = [
@@ -30,6 +31,7 @@ const purposes = [
 
 export default function RequestPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const { setCurrentRequest } = useCertificates()
   const [certificateType, setCertificateType] = useState("")
   const [purpose, setPurpose] = useState("")
@@ -54,6 +56,7 @@ export default function RequestPage() {
       age,
       purok: purok || "Purok 1",
       yearsOfResidency,
+      residentName: user?.fullName || "Guest User",
     })
     router.push("/payment")
   }

@@ -1,72 +1,64 @@
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+'use client';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
-export default function LandingPage() {
+export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-4 md:py-12 lg:py-16">
-        <div className="flex flex-col items-center justify-center">
-          {/* TOP: Logo */}
-          <div className="relative w-full flex justify-center">
-            <div className="relative w-full max-w-3xl aspect-square">
-              <Image
-                src="/images/Linkgod-registration-logo.png.png"
-                alt="Barangay Mawague Seal"
-                fill
-                priority
-                className="object-contain object-bottom"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-70% to-white pointer-events-none" />
-            </div>
-          </div>
+    <main className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="max-w-md w-full flex flex-col items-center text-center space-y-8">
+        {/* Logo Section */}
+        <div className="space-y-4">
+          <Image
+            src="/images/linkod-app-logo-main.png"
+            alt="Bagong Pilipinas Logo"
+            width={320}
+            height={320}
+            priority
+            className="w-64 h-auto mx-auto object-contain"
+          />
+        </div>
 
-          {/* BOTTOM: Content */}
-          <div className="w-full text-center space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 leading-tight">
-                Barangay Mawague
-              </h1>
-              <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent text-4xl md:text-5xl lg:text-6xl font-black leading-tight">
-                Linkod App
-              </div>
-              <p className="text-xl md:text-2xl font-semibold text-slate-700">
-                Digital Services
-              </p>
-            </div>
-
-            <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg mx-auto">
-              Request barangay certificates and documents online. Fast,
-              convenient, and secure.
+        {/* Hero Content */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black text-[#003399]">
+              Barangay Mawague
+            </h1>
+            <h2 className="text-4xl font-black text-[#22c55e]">
+              Linkod App
+            </h2>
+            <p className="text-lg font-bold text-slate-700">
+              Digital Services
             </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
-              <Button
-                asChild
-                className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-lg shadow-lg active:scale-[0.98] transition-all"
-              >
-                <Link href="/register">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Link
-                href="/login"
-                className="text-emerald-600 hover:text-emerald-700 font-semibold underline decoration-2 decoration-emerald-500 underline-offset-4 transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-
-            <div className="pt-8">
-              <Link
-                href="/staff/login"
-                className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Staff Login
-              </Link>
-            </div>
           </div>
+          
+          <p className="text-slate-600 leading-relaxed max-w-xs mx-auto">
+            Request barangay certificates and documents online. Fast, convenient, and secure.
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div className="w-full space-y-4 pt-4">
+          <Button asChild className="w-full h-14 rounded-full bg-gradient-to-r from-[#003399] to-[#cc0000] hover:opacity-90 text-white font-bold text-lg shadow-lg transition-all">
+            <Link href="/register">
+              Get Started <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+          
+          <Button variant="outline" asChild className="w-full h-14 rounded-full border-2 border-[#003399] bg-white text-[#003399] font-bold text-lg shadow-sm hover:bg-slate-50 transition-all">
+            <Link href="/login">
+              → Sign In
+            </Link>
+          </Button>
+        </div>
+
+        {/* Footer Link */}
+        <div className="pt-8">
+          <Link href="/staff/login" className="text-sm font-semibold text-[#003399] hover:underline flex items-center gap-1">
+            Staff Portal →
+          </Link>
         </div>
       </div>
     </main>

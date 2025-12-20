@@ -58,18 +58,15 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    setTimeout(() => {
-      login({
-        userId: `user_${Date.now()}`,
-        mobileNumber: formData.mobileNumber || "+63 912 345 6789",
-        fullName: formData.fullName || "Demo User",
-        email: formData.email || "demo@example.com",
-        address: formData.address || "Barangay Mawaque, Mabalacat, Pampanga",
-      })
-      router.push("/register/success")
-    }, 2000)
+    login({
+      id: `user_${Date.now()}`,
+      mobileNumber: formData.mobileNumber || "+63 912 345 6789",
+      fullName: formData.fullName || "Demo User",
+      email: formData.email || "demo@example.com",
+      address: formData.address || "Barangay Mawaque, Mabalacat, Pampanga",
+    })
+    router.push("/register/success")
   }
 
   return (

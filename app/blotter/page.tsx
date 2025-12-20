@@ -14,20 +14,21 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, ShieldAlert, CheckCircle2, Loader2, Lock } from "lucide-react"
+import { ArrowLeft, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
 
-const COMPLAINT_TYPES = [
-  "Unauthorized Data Collection",
-  "Data Breach",
-  "Improper Data Sharing",
-  "Identity Theft",
-  "Unauthorized Access",
-  "Data Retention Violation",
-  "Consent Violation",
-  "Right to Access Denial",
-  "Right to Erasure Denial",
-  "Other Privacy Concern",
+const INCIDENT_TYPES = [
+  "Noise Complaint",
+  "Property Dispute",
+  "Physical Altercation",
+  "Verbal Abuse",
+  "Theft",
+  "Vandalism",
+  "Domestic Dispute",
+  "Trespassing",
+  "Animal Complaint",
+  "Infrastructure/Lighting Complaint",
+  "Other",
 ]
 
 export default function DataPrivacyComplaintPage() {
@@ -45,7 +46,7 @@ export default function DataPrivacyComplaintPage() {
     complainantAddress: user?.address || "",
     respondentName: "",
     respondentAddress: "",
-    complaintType: "",
+    incidentType: "",
     incidentDate: new Date().toISOString().split("T")[0],
     incidentTime: "",
     incidentLocation: "",
@@ -64,7 +65,7 @@ export default function DataPrivacyComplaintPage() {
       complainantAddress: isAnonymous ? undefined : formData.complainantAddress,
       respondentName: formData.respondentName || undefined,
       respondentAddress: formData.respondentAddress || undefined,
-      incidentType: formData.complaintType || "Other Privacy Concern",
+      incidentType: formData.incidentType || "Other",
       incidentDate: formData.incidentDate,
       incidentTime: formData.incidentTime || undefined,
       incidentLocation: formData.incidentLocation || "Barangay Mawaque",
@@ -85,14 +86,14 @@ export default function DataPrivacyComplaintPage() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500">
             <CheckCircle2 className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Complaint Filed</h1>
-          <p className="mt-1 text-sm text-gray-600">Your data privacy complaint has been recorded.</p>
+          <h1 className="text-xl font-bold text-gray-900">Blotter Report Filed</h1>
+          <p className="mt-1 text-sm text-gray-600">Your incident report has been recorded.</p>
           <Card className="mt-4 w-full max-w-xs border-0 shadow-md">
             <CardContent className="p-4 text-center">
-              <p className="text-xs text-gray-500">Complaint Number</p>
+              <p className="text-xs text-gray-500">Blotter Number</p>
               <p className="mt-1 text-lg font-bold text-emerald-600">{complaintNumber}</p>
               <p className="mt-2 text-xs text-gray-400">
-                Save this number for tracking. Our Data Privacy Officer will contact you.
+                Save this number for tracking. The barangay will review your report.
               </p>
             </CardContent>
           </Card>
@@ -111,20 +112,20 @@ export default function DataPrivacyComplaintPage() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div className="flex items-center gap-2">
-          <ShieldAlert className="h-5 w-5 text-red-500" />
-          <h1 className="text-base font-semibold text-gray-900">Data Privacy Complaint</h1>
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <h1 className="text-base font-semibold text-gray-900">File Blotter Report</h1>
         </div>
       </header>
 
       <main className="flex-1 px-4 py-4 pb-28">
-        <Card className="mb-4 border-0 bg-red-50 shadow-sm">
+        <Card className="mb-4 border-0 bg-amber-50 shadow-sm">
           <CardContent className="p-3">
             <div className="flex items-start gap-3">
-              <Lock className="mt-0.5 h-5 w-5 text-red-600" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
               <div>
-                <p className="text-sm font-medium text-red-900">Confidential Reporting</p>
-                <p className="mt-0.5 text-xs text-red-700">
-                  Your complaint will be handled by our Data Privacy Officer. You may report anonymously.
+                <p className="text-sm font-medium text-amber-900">Confidential Reporting</p>
+                <p className="mt-0.5 text-xs text-amber-700">
+                  Report community incidents to the barangay. You may file anonymously.
                 </p>
               </div>
             </div>
@@ -227,16 +228,16 @@ export default function DataPrivacyComplaintPage() {
               <h3 className="text-sm font-semibold text-gray-900">Complaint Details</h3>
 
               <div className="space-y-2">
-                <Label className="text-xs">Type of Complaint</Label>
+                <Label className="text-xs">Type of Incident</Label>
                 <Select
-                  value={formData.complaintType}
-                  onValueChange={(value) => setFormData({ ...formData, complaintType: value })}
+                  value={formData.incidentType}
+                  onValueChange={(value) => setFormData({ ...formData, incidentType: value })}
                 >
                   <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Select complaint type" />
+                    <SelectValue placeholder="Select incident type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {COMPLAINT_TYPES.map((type) => (
+                    {INCIDENT_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>
@@ -287,13 +288,13 @@ export default function DataPrivacyComplaintPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="narrative" className="text-xs">
-                  Description of Privacy Violation
+                  Description of Incident
                 </Label>
                 <Textarea
                   id="narrative"
                   value={formData.narrative}
                   onChange={(e) => setFormData({ ...formData, narrative: e.target.value })}
-                  placeholder="Please describe the privacy violation in detail..."
+                  placeholder="Please describe what happened in detail..."
                   rows={4}
                 />
               </div>
@@ -304,15 +305,15 @@ export default function DataPrivacyComplaintPage() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-12 w-full rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600"
+            className="h-12 w-full rounded-xl bg-emerald-500 text-sm font-semibold text-white hover:bg-emerald-600"
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Filing Complaint...
+                Filing Report...
               </>
             ) : (
-              "Submit Privacy Complaint"
+              "Submit Blotter Report"
             )}
           </Button>
         </form>

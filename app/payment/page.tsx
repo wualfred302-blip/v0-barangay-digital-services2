@@ -6,18 +6,24 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ArrowLeft, Check, Phone, Lock } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowLeft, FileText, ShieldCheck, Loader2 } from "lucide-react"
 import { useCertificates, type CertificateRequest } from "@/lib/certificate-context"
+import { usePayment } from "@/lib/payment-context"
+import { processPayment, validatePaymentMethod, PaymentTransaction } from "@/lib/payment-utils"
+import { GCashForm, MayaForm, BankTransferForm } from "@/components/payment-methods"
+import { PaymentReceiptModal } from "@/components/payment-receipt-modal"
 
 export default function PaymentPage() {
   const router = useRouter()
   const { currentRequest, addCertificate, setCurrentRequest } = useCertificates()
-  const [mobileNumber, setMobileNumber] = useState("")
-  const [pin, setPin] = useState("")
+  const { addPayment } = usePayment()
+  
   const [isProcessing, setIsProcessing] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
+  const [processingMessage, setProcessingMessage] = useState("Connecting to payment provider...")
+  const [lastTransaction, setLastTransaction] = useState<PaymentTransaction | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!currentRequest) {
@@ -27,72 +33,95 @@ export default function PaymentPage() {
 
   if (!currentRequest) return null
 
-  const generateSerial = () => {
-    const year = new Date().getFullYear()
-    const existingCerts = JSON.parse(localStorage.getItem("barangay_certificates") || "[]")
-    const nextNum = existingCerts.length + 1
-    return `BGRY-MWQ-${year}-${String(nextNum).padStart(6, "0")}`
-  }
+  // Calculate total with processing fee
+  const certFee = currentRequest.amount || 50
+  const processingFee = 5
+  const totalAmount = certFee + processingFee
 
-  const handleConfirmPayment = () => {
+  const handlePaymentSubmit = async (method: "gcash" | "maya" | "bank_transfer", formData: any) => {
+    setError(null)
+    
+    // Validate
+    const validation = validatePaymentMethod(method, formData)
+    if (!validation.isValid) {
+      setError(validation.error || "Invalid payment details")
+      return
+    }
+
     setIsProcessing(true)
+    
+    // Simulated steps
+    const messages = ["Connecting to payment provider...", "Verifying account...", "Processing payment..."]
+    let msgIndex = 0
+    const interval = setInterval(() => {
+      msgIndex = (msgIndex + 1) % messages.length
+      setProcessingMessage(messages[msgIndex])
+    }, 800)
 
-    setTimeout(() => {
-      const serial = generateSerial()
+    try {
+      const transaction = await processPayment(method, totalAmount, currentRequest.id || `temp-${Date.now()}`)
+      
+      clearInterval(interval)
+      
+      // Save payment
+      addPayment(transaction)
+      setLastTransaction(transaction)
+
+      // Generate Certificate
+      const serial = `BGRY-MWQ-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(6, "0")}`
       const certId = `cert_${Date.now()}`
-      setIsSuccess(true)
-
+      
       const newCertificate: CertificateRequest = {
         id: certId,
         certificateType: currentRequest.certificateType || "Barangay Clearance",
         purpose: currentRequest.purpose || "Employment",
         customPurpose: currentRequest.customPurpose,
         requestType: currentRequest.requestType || "regular",
-        amount: currentRequest.amount || 50,
-        paymentReference: `GC-${Date.now()}`,
+        amount: totalAmount,
+        paymentReference: transaction.transactionReference,
+        paymentTransactionId: transaction.id,
         serialNumber: serial,
-        status: "ready",
+        status: "processing",
         createdAt: new Date().toISOString(),
-        age: currentRequest.age,
-        purok: currentRequest.purok,
-        yearsOfResidency: currentRequest.yearsOfResidency,
+        age: currentRequest.age || 0,
+        residentName: currentRequest.residentName,
+        purok: currentRequest.purok || "",
+        yearsOfResidency: currentRequest.yearsOfResidency || 0,
       }
 
       addCertificate(newCertificate)
-
-      // Redirect directly to certificate after 2 seconds
-      setTimeout(() => {
-        setCurrentRequest(null)
-        router.push(`/certificate/${certId}`)
-      }, 2000)
-    }, 2000)
+      
+      setIsProcessing(false)
+      setShowReceipt(true)
+      
+    } catch (err) {
+      clearInterval(interval)
+      setIsProcessing(false)
+      setError("Payment failed. Please try again.")
+    }
   }
 
-  // Success State
-  if (isSuccess) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB] px-6">
-        <Card className="w-full max-w-[400px] rounded-2xl border-0 shadow-[0_4px_6px_rgba(0,0,0,0.07)]">
-          <CardContent className="px-8 py-12 text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#10B981]">
-                <Check className="h-8 w-8 text-[#10B981]" strokeWidth={3} />
-              </div>
-            </div>
-            <h2 className="mb-2 text-2xl font-bold text-[#111827]">Payment Successful!</h2>
-            <p className="mb-6 text-[#6B7280]">Your certificate is ready</p>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-[#E5E7EB]">
-              <div className="h-full w-full animate-pulse bg-[#10B981]" />
-            </div>
-            <p className="mt-4 text-sm text-[#9CA3AF]">Redirecting to your certificate...</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const handleCloseReceipt = () => {
+    setShowReceipt(false)
+    setCurrentRequest(null)
+    router.push("/requests")
+  }
+
+  const handleViewCertificate = () => {
+    setShowReceipt(false)
+    setCurrentRequest(null)
+    router.push("/requests")
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
+      <PaymentReceiptModal 
+        transaction={lastTransaction}
+        open={showReceipt}
+        onClose={handleCloseReceipt}
+        onViewCertificate={handleViewCertificate}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-[#E5E7EB] bg-white px-5">
         <Link href="/request" className="rounded-lg p-1 transition-colors hover:bg-[#F9FAFB]">
@@ -107,102 +136,90 @@ export default function PaymentPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-5 pt-5">
+      <main className="flex-1 px-5 pt-5 pb-10">
+        {/* Processing Overlay */}
+        {isProcessing && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="rounded-2xl bg-white p-8 text-center shadow-xl">
+              <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-[#10B981]" />
+              <p className="font-medium text-gray-900">{processingMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Order Summary */}
-        <Card className="mb-5 rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
+        <Card className="mb-6 rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
           <CardContent className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-[#6B7280]">Certificate</span>
-              <span className="font-medium text-[#111827]">{currentRequest.certificateType}</span>
+            <div className="flex items-start justify-between mb-4">
+               <div className="flex gap-3">
+                 <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-[#10B981]">
+                   <FileText className="h-5 w-5" />
+                 </div>
+                 <div>
+                   <h3 className="font-semibold text-gray-900">{currentRequest.certificateType}</h3>
+                   <p className="text-sm text-gray-500">{currentRequest.purpose}</p>
+                 </div>
+               </div>
             </div>
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-[#6B7280]">Purpose</span>
-              <span className="font-medium text-[#111827]">{currentRequest.purpose}</span>
-            </div>
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-[#6B7280]">Processing</span>
-              <span className="font-medium capitalize text-[#111827]">{currentRequest.requestType}</span>
-            </div>
-            <div className="border-t border-[#E5E7EB] pt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold text-[#111827]">Total</span>
-                <span className="text-2xl font-bold text-[#10B981]">₱{currentRequest.amount?.toFixed(2)}</span>
-              </div>
+
+            <div className="space-y-2 border-t border-gray-100 pt-4">
+               <div className="flex justify-between text-sm">
+                 <span className="text-gray-500">Certificate Fee</span>
+                 <span className="text-gray-900">₱{certFee.toFixed(2)}</span>
+               </div>
+               <div className="flex justify-between text-sm">
+                 <span className="text-gray-500">Processing Fee</span>
+                 <span className="text-gray-900">₱{processingFee.toFixed(2)}</span>
+               </div>
+               <div className="flex justify-between items-center pt-2">
+                 <span className="font-bold text-gray-900">Total Amount</span>
+                 <span className="text-xl font-bold text-[#10B981]">₱{totalAmount.toFixed(2)}</span>
+               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Progress Bar */}
-        <div className="mb-5 flex items-center gap-2">
-          <div className="h-1 flex-1 rounded-full bg-[#10B981]" />
-          <div className="h-1 flex-1 rounded-full bg-[#10B981]" />
-          <div className="h-1 flex-1 rounded-full bg-[#E5E7EB]" />
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-2 text-sm font-medium text-gray-500 uppercase tracking-wider">Select Payment Method</div>
+
+        <Tabs defaultValue="gcash" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 p-1 rounded-xl h-12">
+            <TabsTrigger value="gcash" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">GCash</TabsTrigger>
+            <TabsTrigger value="maya" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Maya</TabsTrigger>
+            <TabsTrigger value="bank" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Bank</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="gcash" className="mt-0">
+            <GCashForm 
+              isLoading={isProcessing} 
+              onSubmit={(data) => handlePaymentSubmit("gcash", data)} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="maya" className="mt-0">
+            <MayaForm 
+              isLoading={isProcessing} 
+              onSubmit={(data) => handlePaymentSubmit("maya", data)} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="bank" className="mt-0">
+            <BankTransferForm 
+              isLoading={isProcessing} 
+              onSubmit={(data) => handlePaymentSubmit("bank_transfer", data)} 
+            />
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
+          <ShieldCheck className="h-4 w-4" />
+          <span>Secure 256-bit encrypted payment</span>
         </div>
-
-        {/* GCash Payment Card */}
-        <Card className="mb-5 overflow-hidden rounded-2xl border-0 bg-[#007DFE] shadow-lg">
-          <CardContent className="p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm font-black text-[#007DFE]">
-                G
-              </div>
-              <span className="text-lg font-bold text-white">GCash</span>
-            </div>
-            <p className="mb-6 text-sm text-white/80">Enter your GCash details to complete payment</p>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm text-white/80">Mobile Number</Label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-4">
-                  <Phone className="h-4 w-4 text-white/60" />
-                  <Input
-                    type="tel"
-                    placeholder="09XX XXX XXXX"
-                    value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    disabled={isProcessing}
-                    className="h-12 border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm text-white/80">GCash PIN</Label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-4">
-                  <Lock className="h-4 w-4 text-white/60" />
-                  <Input
-                    type="password"
-                    maxLength={4}
-                    placeholder="****"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    disabled={isProcessing}
-                    className="h-12 border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Confirm Button */}
-        <Button
-          onClick={handleConfirmPayment}
-          disabled={isProcessing}
-          className="h-14 w-full rounded-xl bg-[#10B981] text-base font-semibold text-white hover:bg-[#059669]"
-        >
-          {isProcessing ? (
-            <span className="flex items-center gap-2">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Processing...
-            </span>
-          ) : (
-            `Pay ₱${currentRequest.amount?.toFixed(2)}`
-          )}
-        </Button>
-
-        <p className="mt-4 pb-6 text-center text-xs text-[#9CA3AF]">
-          This is a demo. No actual transaction will be processed.
-        </p>
       </main>
     </div>
   )

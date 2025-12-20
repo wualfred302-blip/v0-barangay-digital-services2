@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode, memo, useCallback, useMemo } from "react"
 
 export type UserRole = "resident" | "captain" | "secretary" | "treasurer"
 
@@ -36,7 +36,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider = memo(({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [staffUser, setStaffUser] = useState<StaffUser | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -44,86 +44,133 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load resident auth
-    const storedUser = localStorage.getItem("barangay_user")
-    const storedAuth = localStorage.getItem("barangay_auth")
+    const load = async () => {
+      // Load resident auth
+      const storedUser = localStorage.getItem("barangay_user")
+      const storedAuth = localStorage.getItem("barangay_auth")
 
-    if (storedUser && storedAuth === "true") {
-      setUser(JSON.parse(storedUser))
-      setIsAuthenticated(true)
+      if (storedUser && storedAuth === "true") {
+        try {
+          setUser(JSON.parse(storedUser))
+          setIsAuthenticated(true)
+        } catch (error) {
+          console.error("Failed to parse resident user data:", error)
+          localStorage.removeItem("barangay_user")
+          localStorage.removeItem("barangay_auth")
+          setUser(null)
+          setIsAuthenticated(false)
+        }
+      }
+
+      // Load staff auth
+      const storedStaff = localStorage.getItem("barangay_staff")
+      const storedStaffAuth = localStorage.getItem("barangay_staff_auth")
+
+      if (storedStaff && storedStaffAuth === "true") {
+        try {
+          setStaffUser(JSON.parse(storedStaff))
+          setIsStaffAuthenticated(true)
+        } catch (error) {
+          console.error("Failed to parse staff user data:", error)
+          localStorage.removeItem("barangay_staff")
+          localStorage.removeItem("barangay_staff_auth")
+          setStaffUser(null)
+          setIsStaffAuthenticated(false)
+        }
+      }
+
+      setIsLoading(false)
     }
-
-    // Load staff auth
-    const storedStaff = localStorage.getItem("barangay_staff")
-    const storedStaffAuth = localStorage.getItem("barangay_staff_auth")
-
-    if (storedStaff && storedStaffAuth === "true") {
-      setStaffUser(JSON.parse(storedStaff))
-      setIsStaffAuthenticated(true)
-    }
-
-    setIsLoading(false)
+    load()
   }, [])
 
-  const login = (userData: User) => {
-    const userWithRole = { ...userData, role: "resident" as UserRole }
-    setUser(userWithRole)
-    setIsAuthenticated(true)
-    localStorage.setItem("barangay_user", JSON.stringify(userWithRole))
-    localStorage.setItem("barangay_auth", "true")
-  }
+  // Debounced save for auth state
+  useEffect(() => {
+    if (isLoading) return
 
-  const staffLogin = (staffData: StaffUser) => {
+    const timer = setTimeout(() => {
+      if (user && isAuthenticated) {
+        localStorage.setItem("barangay_user", JSON.stringify(user))
+        localStorage.setItem("barangay_auth", "true")
+      } else {
+        localStorage.removeItem("barangay_user")
+        localStorage.removeItem("barangay_auth")
+      }
+
+      if (staffUser && isStaffAuthenticated) {
+        localStorage.setItem("barangay_staff", JSON.stringify(staffUser))
+        localStorage.setItem("barangay_staff_auth", "true")
+      } else {
+        localStorage.removeItem("barangay_staff")
+        localStorage.removeItem("barangay_staff_auth")
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [user, isAuthenticated, staffUser, isStaffAuthenticated, isLoading])
+
+  const login = useCallback((userData: User) => {
+    setUser(userData)
+    setIsAuthenticated(true)
+  }, [])
+
+  const staffLogin = useCallback((staffData: StaffUser) => {
     setStaffUser(staffData)
     setIsStaffAuthenticated(true)
-    localStorage.setItem("barangay_staff", JSON.stringify(staffData))
-    localStorage.setItem("barangay_staff_auth", "true")
-  }
+  }, [])
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null)
     setIsAuthenticated(false)
     localStorage.removeItem("barangay_user")
     localStorage.removeItem("barangay_auth")
-  }
+  }, [])
 
-  const staffLogout = () => {
+  const staffLogout = useCallback(() => {
     setStaffUser(null)
     setIsStaffAuthenticated(false)
     localStorage.removeItem("barangay_staff")
     localStorage.removeItem("barangay_staff_auth")
-  }
+  }, [])
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData }
-      setUser(updatedUser)
-      localStorage.setItem("barangay_user", JSON.stringify(updatedUser))
-    }
-  }
+  const updateUser = useCallback((userData: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...userData } : null)
+  }, [])
 
   const userRole: UserRole | null = staffUser?.role || user?.role || null
 
+  const value = useMemo(() => ({
+    user,
+    staffUser,
+    isAuthenticated,
+    isStaffAuthenticated,
+    isLoading,
+    userRole,
+    login,
+    staffLogin,
+    logout,
+    staffLogout,
+    updateUser,
+  }), [
+    user,
+    staffUser,
+    isAuthenticated,
+    isStaffAuthenticated,
+    isLoading,
+    userRole,
+    login,
+    staffLogin,
+    logout,
+    staffLogout,
+    updateUser,
+  ])
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        staffUser,
-        isAuthenticated,
-        isStaffAuthenticated,
-        isLoading,
-        userRole,
-        login,
-        staffLogin,
-        logout,
-        staffLogout,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
-}
+})
 
 export function useAuth() {
   const context = useContext(AuthContext)

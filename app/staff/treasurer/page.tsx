@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
 import { useCertificates } from "@/lib/certificate-context"
+import { useBayanihan } from "@/lib/bayanihan-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,12 +18,15 @@ import {
   ArrowUpRight,
   FileText,
   CheckCircle2,
+  HandHeart,
 } from "lucide-react"
+import Link from "next/link"
 
 export default function TreasurerDashboard() {
   const router = useRouter()
   const { staffUser, isStaffAuthenticated, isLoading, staffLogout } = useAuth()
   const { certificates } = useCertificates()
+  const { requests, getPendingCount, getHighUrgencyCount } = useBayanihan()
 
   useEffect(() => {
     if (!isLoading && (!isStaffAuthenticated || staffUser?.role !== "treasurer")) {
@@ -155,6 +159,48 @@ export default function TreasurerDashboard() {
               </p>
             </CardContent>
           </Card>
+
+          <Card className="h-[72px] border-0 bg-emerald-50 shadow-sm col-span-2">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-1.5 text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium">Digitally Signed</span>
+              </div>
+              <div className="flex items-end justify-between">
+                <p className="mt-1 text-lg font-bold text-emerald-900">
+                  {certificates.filter((c) => c.staffSignature).length}
+                </p>
+                <p className="text-[10px] text-emerald-600">
+                  out of {certificates.length} certificates
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-[72px] border-0 bg-amber-50 shadow-sm col-span-2">
+            <CardContent className="p-3 relative">
+              <div className="flex items-center gap-1.5 text-amber-700">
+                <HandHeart className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium">Bayanihan (Budget Items)</span>
+              </div>
+              <div className="flex items-end justify-between">
+                <p className="mt-1 text-lg font-bold text-amber-900">
+                  {requests.filter(r => 
+                    r.status === 'pending' && 
+                    ['Infrastructure Issue', 'Road/Street Problem', 'Flooding/Drainage'].includes(r.type)
+                  ).length}
+                </p>
+                <p className="text-[10px] text-amber-600">
+                  requires budget allocation
+                </p>
+              </div>
+              {getHighUrgencyCount() > 0 && (
+                <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                  {getHighUrgencyCount()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Revenue by Type */}
@@ -172,6 +218,56 @@ export default function TreasurerDashboard() {
               ))}
               {Object.keys(revenueByType).length === 0 && (
                 <p className="py-3 text-center text-xs text-gray-500">No transactions yet</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Budget-Related Bayanihan */}
+        <Card className="mb-4 border-0 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900">Budget-Related Bayanihan</h3>
+              <Link href="/staff/bayanihan">
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-600 hover:text-emerald-700">
+                  View All
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {requests
+                .filter(r => 
+                  r.status === 'pending' && 
+                  ['Infrastructure Issue', 'Road/Street Problem', 'Flooding/Drainage'].includes(r.type)
+                )
+                .slice(0, 3)
+                .map((request) => (
+                  <div key={request.id} className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                        request.urgency === 'high' ? 'bg-red-100' : 'bg-amber-100'
+                      }`}>
+                        <HandHeart className={`h-3.5 w-3.5 ${
+                          request.urgency === 'high' ? 'text-red-600' : 'text-amber-600'
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-900">{request.type}</p>
+                        <p className="text-[10px] text-gray-500">{request.location}</p>
+                      </div>
+                    </div>
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      request.urgency === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {request.urgency}
+                    </span>
+                  </div>
+                ))}
+              {requests.filter(r => 
+                r.status === 'pending' && 
+                ['Infrastructure Issue', 'Road/Street Problem', 'Flooding/Drainage'].includes(r.type)
+              ).length === 0 && (
+                <p className="py-3 text-center text-xs text-gray-500">No budget items pending</p>
               )}
             </div>
           </CardContent>
@@ -199,6 +295,13 @@ export default function TreasurerDashboard() {
                       )}
                     </div>
                   </div>
+                  {cert.staffSignature && (
+                    <img 
+                      src={cert.staffSignature} 
+                      alt="Signature" 
+                      className="mr-2 h-6 w-auto opacity-50"
+                    />
+                  )}
                   <span className="text-sm font-semibold text-emerald-600">
                     +₱{cert.amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                   </span>

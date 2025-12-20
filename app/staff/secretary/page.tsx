@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useCertificates } from "@/lib/certificate-context"
 import { useBlotters } from "@/lib/blotter-context"
 import { useAnnouncements } from "@/lib/announcements-context"
+import { useBayanihan } from "@/lib/bayanihan-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -22,6 +23,7 @@ import {
   Filter,
   Search,
   ClipboardList,
+  HandHeart,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
@@ -31,6 +33,7 @@ export default function SecretaryDashboard() {
   const { certificates, updateCertificateStatus } = useCertificates()
   const { blotters } = useBlotters()
   const { announcements } = useAnnouncements()
+  const { requests, getPendingCount, getHighUrgencyCount } = useBayanihan()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "processing" | "ready">("all")
 
@@ -115,6 +118,20 @@ export default function SecretaryDashboard() {
               <p className="mt-1 text-xl font-bold text-red-900">{activeComplaints}</p>
             </CardContent>
           </Card>
+          <Card className={`h-[72px] min-w-[100px] shrink-0 border-0 shadow-sm ${getHighUrgencyCount() > 0 ? 'bg-red-50' : 'bg-emerald-50'}`}>
+            <CardContent className="p-3 relative">
+              <div className="flex items-center gap-1.5">
+                <HandHeart className={`h-3.5 w-3.5 ${getHighUrgencyCount() > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+                <span className={`text-[10px] font-medium ${getHighUrgencyCount() > 0 ? 'text-red-700' : 'text-emerald-700'}`}>Bayanihan</span>
+              </div>
+              <p className={`mt-1 text-xl font-bold ${getHighUrgencyCount() > 0 ? 'text-red-900' : 'text-emerald-900'}`}>{getPendingCount()}</p>
+              {getHighUrgencyCount() > 0 && (
+                <div className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] font-bold text-white">
+                  {getHighUrgencyCount()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           <Card className="h-[72px] min-w-[100px] shrink-0 border-0 bg-emerald-50 shadow-sm">
             <CardContent className="p-3">
               <div className="flex items-center gap-1.5">
@@ -130,7 +147,7 @@ export default function SecretaryDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="certificates" className="w-full">
-          <TabsList className="mb-3 grid w-full grid-cols-3 bg-slate-100">
+          <TabsList className="mb-3 grid w-full grid-cols-4 bg-slate-100">
             <TabsTrigger value="certificates" className="text-xs">
               Certificates
             </TabsTrigger>
@@ -139,6 +156,9 @@ export default function SecretaryDashboard() {
             </TabsTrigger>
             <TabsTrigger value="announcements" className="text-xs">
               Announce
+            </TabsTrigger>
+            <TabsTrigger value="bayanihan" className="text-xs">
+              Bayanihan
             </TabsTrigger>
           </TabsList>
 
@@ -189,6 +209,13 @@ export default function SecretaryDashboard() {
                           </div>
                         )}
                       </div>
+                      {cert.staffSignature && (
+                        <img 
+                          src={cert.staffSignature} 
+                          alt="Signature" 
+                          className="mr-2 h-8 w-auto opacity-50"
+                        />
+                      )}
                       {cert.status === "processing" && (
                         <Button
                           size="sm"
@@ -295,6 +322,45 @@ export default function SecretaryDashboard() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="bayanihan" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">Pending Requests</h3>
+              <Link href="/staff/bayanihan">
+                <Button size="sm" className="h-8 bg-emerald-600 text-xs hover:bg-emerald-700">
+                  View All
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {requests.filter(r => r.status === 'pending').slice(0, 5).map((request) => (
+                <Card key={request.id} className="border-0 shadow-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{request.number}</p>
+                        <p className="mt-0.5 text-xs text-gray-600">{request.type}</p>
+                        <p className="mt-0.5 text-[10px] text-gray-400">{request.location}</p>
+                      </div>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                        request.urgency === 'high' ? 'bg-red-100 text-red-700' :
+                        request.urgency === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {request.urgency}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {requests.filter(r => r.status === 'pending').length === 0 && (
+                <div className="py-8 text-center">
+                  <HandHeart className="mx-auto h-10 w-10 text-gray-300" />
+                  <p className="mt-2 text-xs text-gray-500">No pending requests</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Search, Filter, AlertTriangle, Calendar, MapPin, User } from "lucide-react"
+import { ArrowLeft, Search, Filter, AlertTriangle, Calendar, MapPin, User, Users } from "lucide-react"
 
 const STATUS_OPTIONS: { value: BlotterStatus | "all"; label: string; color: string }[] = [
   { value: "all", label: "All Status", color: "bg-slate-100 text-slate-700" },
@@ -23,12 +23,28 @@ const STATUS_OPTIONS: { value: BlotterStatus | "all"; label: string; color: stri
   { value: "dismissed", label: "Dismissed", color: "bg-slate-100 text-slate-500" },
 ]
 
+const INCIDENT_TYPES = [
+  "Noise Complaint",
+  "Property Dispute",
+  "Physical Altercation",
+  "Verbal Abuse",
+  "Theft",
+  "Vandalism",
+  "Domestic Dispute",
+  "Trespassing",
+  "Animal Complaint",
+  "Infrastructure/Lighting Complaint",
+  "Other",
+]
+
 export default function StaffBlottersPage() {
   const router = useRouter()
   const { staffUser, isStaffAuthenticated } = useAuth()
-  const { blotters, updateBlotter } = useBlotters()
+  const { blotters, updateBlotter, addBlotter } = useBlotters()
   const [searchTerm, setSearchTerm] = useState("")
+  const [isBayanihanOpen, setIsBayanihanOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<BlotterStatus | "all">("all")
+  const [typeFilter, setTypeFilter] = useState<string>("all")
   const [selectedBlotter, setSelectedBlotter] = useState<string | null>(null)
   const [resolutionNotes, setResolutionNotes] = useState("")
 
@@ -43,7 +59,8 @@ export default function StaffBlottersPage() {
       b.incidentType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.complainantName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || b.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchesType = typeFilter === "all" || b.incidentType === typeFilter
+    return matchesSearch && matchesStatus && matchesType
   })
 
   const handleStatusChange = (blotterId: string, newStatus: BlotterStatus) => {
@@ -123,6 +140,20 @@ export default function StaffBlottersPage() {
               {STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {INCIDENT_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -252,6 +283,63 @@ export default function StaffBlottersPage() {
           )}
         </div>
       </main>
+
+      {/* Bayanihan FAB */}
+      {(staffUser?.role === "captain" || staffUser?.role === "secretary") && (
+        <>
+          <Dialog open={isBayanihanOpen} onOpenChange={setIsBayanihanOpen}>
+            <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0">
+              <DialogHeader className="p-6 border-b border-slate-100 bg-white">
+                <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                  <Users className="h-6 w-6 text-emerald-600" />
+                  Bayanihan Mediation Request
+                </DialogTitle>
+              </DialogHeader>
+              <div className="p-6 space-y-4 bg-white">
+                <p className="text-sm text-slate-600">
+                  Request community mediation for neighborhood cooperation and peaceful resolution.
+                </p>
+                <Button
+                  onClick={() => {
+                    addBlotter({
+                      complainantName: staffUser.fullName,
+                      incidentType: "Bayanihan Mediation",
+                      incidentDate: new Date().toISOString().split("T")[0],
+                      incidentLocation: "Barangay Mawaque",
+                      narrative: "Community bayanihan request - needs captain/secretary review.",
+                      status: "scheduled_mediation" as BlotterStatus,
+                      isAnonymous: true,
+                    })
+                    setIsBayanihanOpen(false)
+                  }}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg text-white font-semibold transition-all"
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Initiate Bayanihan
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <button
+            className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-white shadow-2xl hover:shadow-3xl active:scale-95 transition-all duration-200 hover:-translate-y-1 animate-pop-in md:bottom-6 md:right-6"
+            onClick={() => setIsBayanihanOpen(true)}
+            aria-label="Mabayanihan - Community Action"
+          >
+            <Users className="h-6 w-6 drop-shadow-md" />
+          </button>
+
+          <style jsx>{`
+            @keyframes pop-in {
+              0% { opacity: 0; transform: scale(0.5) translate(50%, 50%); }
+              100% { opacity: 1; transform: scale(1) translate(0, 0); }
+            }
+            .animate-pop-in {
+              animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+          `}</style>
+        </>
+      )}
     </div>
   )
 }

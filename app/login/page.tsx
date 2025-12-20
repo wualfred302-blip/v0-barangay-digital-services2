@@ -21,18 +21,15 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    setTimeout(() => {
-      login({
-        userId: `user_${Date.now()}`,
-        mobileNumber: "+63 912 345 6789",
-        fullName: email.split("@")[0] || "Demo User",
-        email: email || "demo@example.com",
-        address: "Barangay Mawaque, Mabalacat, Pampanga",
-      })
-      router.push("/dashboard")
-    }, 2000)
+    login({
+      id: `user_${Date.now()}`,
+      mobileNumber: "+63 912 345 6789",
+      fullName: email.split("@")[0] || "Demo User",
+      email: email || "demo@example.com",
+      address: "Barangay Mawaque, Mabalacat, Pampanga",
+    })
+    router.push("/dashboard")
   }
 
   return (

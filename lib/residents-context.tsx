@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, memo, useCallback, useMemo } from "react";
 
 export type CivilStatus = "Single" | "Married" | "Widowed" | "Separated";
 
@@ -40,34 +40,13 @@ const PUROKS = ["Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5", "Purok 6"
 const CIVIL_STATUSES: CivilStatus[] = ["Single", "Married", "Widowed", "Separated"];
 const MOBILE_PREFIXES = ["917", "918", "919", "920", "921", "922", "923", "924", "925", "926", "927", "928", "929", "939", "949", "959", "969", "979", "989", "999"];
 
-export function ResidentsProvider({ children }: { children: React.ReactNode }) {
+export const ResidentsProvider = memo(({ children }: { children: React.ReactNode }) => {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setResidents(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored residents", e);
-        seedData();
-      }
-    } else {
-      seedData();
-    }
-    setIsInitialized(true);
-  }, []);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(residents));
-    }
-  }, [residents, isInitialized]);
-
-  const seedData = () => {
+  const seedData = useCallback(() => {
     const seededResidents: Resident[] = [];
-    const count = 40; // Seeding 40 residents as per 30-50 range
+    const count = 10; // Reduced to 10 as per requirements
 
     for (let i = 0; i < count; i++) {
       const firstName = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
@@ -127,9 +106,36 @@ export function ResidentsProvider({ children }: { children: React.ReactNode }) {
     }
 
     setResidents(seededResidents);
-  };
+  }, []);
 
-  const addResident = (data: Omit<Resident, "id" | "createdAt" | "updatedAt">): Resident => {
+  useEffect(() => {
+    const load = async () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          setResidents(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse stored residents", e);
+          seedData();
+        }
+      } else {
+        seedData();
+      }
+      setIsInitialized(true);
+    };
+    load();
+  }, [seedData]);
+
+  useEffect(() => {
+    if (isInitialized && residents.length > 0) {
+      const timeout = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(residents, null, 0));
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [residents, isInitialized]);
+
+  const addResident = useCallback((data: Omit<Resident, "id" | "createdAt" | "updatedAt">): Resident => {
     const now = new Date().toISOString();
     const newResident: Resident = {
       ...data,
@@ -139,9 +145,9 @@ export function ResidentsProvider({ children }: { children: React.ReactNode }) {
     };
     setResidents((prev) => [...prev, newResident]);
     return newResident;
-  };
+  }, []);
 
-  const updateResident = (id: string, updates: Partial<Resident>) => {
+  const updateResident = useCallback((id: string, updates: Partial<Resident>) => {
     setResidents((prev) =>
       prev.map((r) =>
         r.id === id
@@ -149,17 +155,17 @@ export function ResidentsProvider({ children }: { children: React.ReactNode }) {
           : r
       )
     );
-  };
+  }, []);
 
-  const deleteResident = (id: string) => {
+  const deleteResident = useCallback((id: string) => {
     setResidents((prev) => prev.filter((r) => r.id !== id));
-  };
+  }, []);
 
-  const getResident = (id: string) => {
+  const getResident = useCallback((id: string) => {
     return residents.find((r) => r.id === id);
-  };
+  }, [residents]);
 
-  const searchResidents = (query: string) => {
+  const searchResidents = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase();
     return residents.filter(
       (r) =>
@@ -167,28 +173,36 @@ export function ResidentsProvider({ children }: { children: React.ReactNode }) {
         r.purok.toLowerCase().includes(lowerQuery) ||
         r.address.toLowerCase().includes(lowerQuery)
     );
-  };
+  }, [residents]);
 
-  const getResidentsByPurok = (purok: string) => {
+  const getResidentsByPurok = useCallback((purok: string) => {
     return residents.filter((r) => r.purok === purok);
-  };
+  }, [residents]);
+
+  const value = useMemo(() => ({
+    residents,
+    addResident,
+    updateResident,
+    deleteResident,
+    getResident,
+    searchResidents,
+    getResidentsByPurok,
+  }), [
+    residents,
+    addResident,
+    updateResident,
+    deleteResident,
+    getResident,
+    searchResidents,
+    getResidentsByPurok,
+  ]);
 
   return (
-    <ResidentsContext.Provider
-      value={{
-        residents,
-        addResident,
-        updateResident,
-        deleteResident,
-        getResident,
-        searchResidents,
-        getResidentsByPurok,
-      }}
-    >
+    <ResidentsContext.Provider value={value}>
       {children}
     </ResidentsContext.Provider>
   );
-}
+});
 
 export function useResidents() {
   const context = useContext(ResidentsContext);

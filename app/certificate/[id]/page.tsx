@@ -6,10 +6,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Download, Share2, Printer, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Download, Share2, Printer, CheckCircle2, Check, Copy } from "lucide-react"
 import { useCertificates, type CertificateRequest } from "@/lib/certificate-context"
 import { useAuth } from "@/lib/auth-context"
 import { QRCodeSVG } from "qrcode.react"
+import { generateSignatureHash } from "@/lib/signature-utils"
+import QRCode from "qrcode"
 
 const officials = [
   { name: "HON. JOHN DOE", title: "Punong Barangay" },
@@ -41,9 +43,11 @@ export default function CertificatePage() {
   const router = useRouter()
   const params = useParams()
   const certId = params.id as string
-  const { getCertificate } = useCertificates()
+  const { getCertificate, getVerificationUrl } = useCertificates()
   const { user } = useAuth()
   const [certificate, setCertificate] = useState<CertificateRequest | null>(null)
+  const [signatureHash, setSignatureHash] = useState<string | null>(null)
+  const [isCopied, setIsCopied] = useState(false)
 
   useEffect(() => {
     if (certId) {
@@ -56,6 +60,16 @@ export default function CertificatePage() {
     }
   }, [certId, getCertificate, router])
 
+  useEffect(() => {
+    async function computeHash() {
+      if (certificate?.staffSignature) {
+        const hash = await generateSignatureHash(certificate.staffSignature)
+        setSignatureHash(hash)
+      }
+    }
+    computeHash()
+  }, [certificate?.staffSignature])
+
   const fullName = user?.fullName || "JUAN DELA CRUZ"
   const age = certificate?.age || 25
   const purok = certificate?.purok || "Purok 1"
@@ -63,19 +77,42 @@ export default function CertificatePage() {
   const purpose = certificate?.purpose || "Employment"
   const issueDate = formatCertificateDate(new Date())
 
-  const qrData = JSON.stringify({
-    serial: certificate?.serialNumber,
-    name: fullName,
-    date: new Date().toISOString().split("T")[0],
-    signed: !!certificate?.staffSignature,
-    signedBy: certificate?.signedBy,
-    verify: `https://mawaque.gov.ph/verify/${certificate?.serialNumber}`,
-  })
+  const verifyUrl = certificate ? getVerificationUrl(certificate.serialNumber) : ""
+  const qrData = signatureHash ? `${verifyUrl}?signatureHash=${signatureHash}` : verifyUrl
+
+  const handleCopyLink = async () => {
+    if (!certificate) return
+    const url = getVerificationUrl(certificate.serialNumber)
+    try {
+      await navigator.clipboard.writeText(url)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (err) {
+      console.error("Failed to copy link", err)
+    }
+  }
 
   const handleDownload = async () => {
     if (!certificate) return
+
+    let currentHash = signatureHash
+    if (certificate.staffSignature) {
+      currentHash = await generateSignatureHash(certificate.staffSignature)
+    }
+    
+    const verifyUrl = getVerificationUrl(certificate.serialNumber)
+    const pdfQrData = currentHash ? `${verifyUrl}?signatureHash=${currentHash}` : verifyUrl
+
     const { jsPDF } = await import("jspdf")
     const doc = new jsPDF("p", "mm", "a4")
+
+    // Generate QR Code for PDF
+    let qrDataUrl = ""
+    try {
+      qrDataUrl = await QRCode.toDataURL(pdfQrData)
+    } catch (err) {
+      console.error("Failed to generate QR for PDF", err)
+    }
 
     const pageWidth = 210
     const pageHeight = 297
@@ -225,6 +262,13 @@ export default function CertificatePage() {
     doc.setFontSize(8)
     doc.text(`Serial No: ${certificate?.serialNumber || "BGRY-MWQ-2025-000001"}`, contentX, pageHeight - 25)
 
+    // QR Code
+    if (qrDataUrl) {
+      doc.addImage(qrDataUrl, "PNG", contentX + contentWidth - 25, pageHeight - 35, 25, 25)
+      doc.setFontSize(6)
+      doc.text("Scan to verify", contentX + contentWidth - 12.5, pageHeight - 8, { align: "center" })
+    }
+
     doc.save(`certificate-${certificate?.serialNumber || "document"}.pdf`)
   }
 
@@ -302,7 +346,18 @@ export default function CertificatePage() {
                 {/* Title */}
                 <h2 className="mb-1 text-center text-3xl font-bold text-[#111827]">Barangay</h2>
                 <h2 className="mb-2 text-center text-3xl font-bold text-[#111827]">Certification</h2>
-                <p className="mb-8 text-center text-sm italic text-[#6B7280]">({certificate.certificateType})</p>
+                <div className="mb-8 flex items-center justify-center gap-2">
+                  <p className="text-center text-sm italic text-[#6B7280]">({certificate.certificateType})</p>
+                  {certificate.staffSignature && (
+                    <div 
+                      className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200"
+                      title="This certificate has been digitally signed and can be verified"
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      Digitally Signed
+                    </div>
+                  )}
+                </div>
 
                 {/* Body */}
                 <p className="mb-6 font-bold text-[#111827]">TO WHOM IT MAY CONCERN:</p>
@@ -354,9 +409,16 @@ export default function CertificatePage() {
                   <div>
                     <p className="text-xs text-[#6B7280]">Serial No: {certificate.serialNumber}</p>
                     {certificate.staffSignature && (
-                      <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span>Digitally Signed</span>
+                      <div className="mt-2">
+                        <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>Digitally Signed</span>
+                        </div>
+                        {signatureHash && (
+                          <p className="mt-1 font-mono text-[10px] text-gray-400">
+                            Hash: {signatureHash.substring(0, 8)}...
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -385,10 +447,11 @@ export default function CertificatePage() {
         <div className="mb-3 flex gap-3">
           <Button
             variant="outline"
+            onClick={handleCopyLink}
             className="h-[52px] flex-1 rounded-xl border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB] bg-transparent"
           >
-            <Share2 className="mr-2 h-5 w-5" />
-            Share
+            {isCopied ? <Check className="mr-2 h-5 w-5 text-emerald-600" /> : <Share2 className="mr-2 h-5 w-5" />}
+            {isCopied ? "Copied!" : "Share"}
           </Button>
           <Button
             variant="outline"

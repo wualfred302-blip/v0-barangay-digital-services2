@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode, memo, useCallback, useMemo } from "react"
 
 export type BlotterStatus =
   | "filed"
@@ -42,62 +42,89 @@ interface BlotterContextType {
 
 const BlotterContext = createContext<BlotterContextType | undefined>(undefined)
 
-export function BlotterProvider({ children }: { children: ReactNode }) {
+export const BlotterProvider = memo(({ children }: { children: ReactNode }) => {
   const [blotters, setBlotters] = useState<Blotter[]>([])
   const [counter, setCounter] = useState(0)
 
   useEffect(() => {
-    const stored = localStorage.getItem("barangay_blotters")
-    const storedCounter = localStorage.getItem("barangay_blotter_counter")
-    if (stored) {
-      setBlotters(JSON.parse(stored))
+    const load = async () => {
+      const stored = localStorage.getItem("barangay_blotters")
+      const storedCounter = localStorage.getItem("barangay_blotter_counter")
+      if (stored) {
+        try {
+          setBlotters(JSON.parse(stored))
+        } catch (error) {
+          console.error("Failed to parse blotters:", error)
+          localStorage.removeItem("barangay_blotters")
+          setBlotters([])
+        }
+      }
+      if (storedCounter) {
+        setCounter(Number.parseInt(storedCounter, 10) || 0)
+      }
     }
-    if (storedCounter) {
-      setCounter(Number.parseInt(storedCounter, 10))
-    }
+    load()
   }, [])
 
-  const generateBlotterNumber = () => {
+  // Debounced save
+  useEffect(() => {
+    if (blotters.length === 0 && counter === 0) return
+    const timeout = setTimeout(() => {
+      localStorage.setItem("barangay_blotters", JSON.stringify(blotters, null, 0))
+      localStorage.setItem("barangay_blotter_counter", counter.toString())
+    }, 1000)
+    return () => clearTimeout(timeout)
+  }, [blotters, counter])
+
+  const generateBlotterNumber = useCallback(() => {
     const nextNum = counter + 1
     setCounter(nextNum)
-    localStorage.setItem("barangay_blotter_counter", nextNum.toString())
     const year = new Date().getFullYear()
     return `BLT-${year}-${String(nextNum).padStart(6, "0")}`
-  }
+  }, [counter])
 
-  const addBlotter = (blotterData: Omit<Blotter, "id" | "blotterNumber" | "createdAt" | "updatedAt">) => {
+  const addBlotter = useCallback((blotterData: Omit<Blotter, "id" | "blotterNumber" | "createdAt" | "updatedAt">) => {
+    const nextNum = counter + 1
+    setCounter(nextNum)
+    const year = new Date().getFullYear()
+    const blotterNumber = `BLT-${year}-${String(nextNum).padStart(6, "0")}`
+
     const newBlotter: Blotter = {
       ...blotterData,
       id: crypto.randomUUID(),
-      blotterNumber: generateBlotterNumber(),
+      blotterNumber,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    const updated = [newBlotter, ...blotters]
-    setBlotters(updated)
-    localStorage.setItem("barangay_blotters", JSON.stringify(updated))
+    setBlotters(prev => [newBlotter, ...prev])
     return newBlotter
-  }
+  }, [counter])
 
-  const updateBlotter = (id: string, updates: Partial<Blotter>) => {
-    const updated = blotters.map((b) => (b.id === id ? { ...b, ...updates, updatedAt: new Date().toISOString() } : b))
-    setBlotters(updated)
-    localStorage.setItem("barangay_blotters", JSON.stringify(updated))
-  }
+  const updateBlotter = useCallback((id: string, updates: Partial<Blotter>) => {
+    setBlotters(prev => prev.map((b) => (b.id === id ? { ...b, ...updates, updatedAt: new Date().toISOString() } : b)))
+  }, [])
 
-  const getBlotter = (id: string) => blotters.find((b) => b.id === id)
+  const getBlotter = useCallback((id: string) => blotters.find((b) => b.id === id), [blotters])
 
-  const getBlottersByStatus = (status: BlotterStatus | "all") => {
+  const getBlottersByStatus = useCallback((status: BlotterStatus | "all") => {
     if (status === "all") return blotters
     return blotters.filter((b) => b.status === status)
-  }
+  }, [blotters])
+
+  const value = useMemo(() => ({
+    blotters,
+    addBlotter,
+    updateBlotter,
+    getBlotter,
+    getBlottersByStatus
+  }), [blotters, addBlotter, updateBlotter, getBlotter, getBlottersByStatus])
 
   return (
-    <BlotterContext.Provider value={{ blotters, addBlotter, updateBlotter, getBlotter, getBlottersByStatus }}>
+    <BlotterContext.Provider value={value}>
       {children}
     </BlotterContext.Provider>
   )
-}
+})
 
 export function useBlotters() {
   const context = useContext(BlotterContext)

@@ -11,6 +11,7 @@ import {
   FileText,
   ClipboardList,
   User,
+  Users,
   ShieldAlert,
   Megaphone,
   Bell,
@@ -163,6 +164,21 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
+        <Link href="/bayanihan" className="block">
+          <Card className="group mb-3 overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-amber-500 to-amber-600 shadow-md transition-all active:scale-[0.98]">
+            <CardContent className="relative flex h-[120px] flex-col justify-between p-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white">Bayanihan</h4>
+                <p className="text-xs font-medium text-white/90">Community Help</p>
+              </div>
+              <ChevronRight className="absolute bottom-4 right-4 h-5 w-5 text-white/80" />
+            </CardContent>
+          </Card>
+        </Link>
+
         <div className="grid grid-cols-2 gap-3">
           <Link href="/requests" className="block">
             <Card className="h-[88px] rounded-xl border-0 shadow-sm transition-all active:scale-[0.98]">
@@ -181,12 +197,12 @@ export default function DashboardPage() {
           <Link href="/blotter" className="block">
             <Card className="h-[88px] rounded-xl border-0 shadow-sm transition-all active:scale-[0.98]">
               <CardContent className="flex h-full flex-col justify-between p-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100">
-                  <ShieldAlert className="h-5 w-5 text-red-600" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100">
+                  <ShieldAlert className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Data Privacy</p>
-                  <p className="text-xs text-gray-500">File complaint</p>
+                  <p className="text-sm font-semibold text-gray-900">File Blotter</p>
+                  <p className="text-xs text-gray-500">Report incident</p>
                 </div>
               </CardContent>
             </Card>

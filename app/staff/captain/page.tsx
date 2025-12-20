@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useCertificates } from "@/lib/certificate-context"
 import { useBlotters } from "@/lib/blotter-context"
 import { useAnnouncements } from "@/lib/announcements-context"
+import { useBayanihan } from "@/lib/bayanihan-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +21,7 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
+  HandHeart,
 } from "lucide-react"
 
 export default function CaptainDashboard() {
@@ -28,6 +30,7 @@ export default function CaptainDashboard() {
   const { certificates } = useCertificates()
   const { blotters } = useBlotters()
   const { announcements } = useAnnouncements()
+  const { getPendingCount, getHighUrgencyCount } = useBayanihan()
 
   useEffect(() => {
     if (!isLoading && (!isStaffAuthenticated || staffUser?.role !== "captain")) {
@@ -134,6 +137,23 @@ export default function CaptainDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className={`h-[88px] border-0 shadow-sm ${getHighUrgencyCount() > 0 ? 'bg-red-50' : 'bg-emerald-50'}`}>
+            <CardContent className="flex h-full items-center gap-3 p-3 relative">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${getHighUrgencyCount() > 0 ? 'bg-red-500' : 'bg-emerald-500'}`}>
+                <HandHeart className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className={`text-xl font-bold ${getHighUrgencyCount() > 0 ? 'text-red-900' : 'text-emerald-900'}`}>{getPendingCount()}</p>
+                <p className={`text-[10px] font-medium ${getHighUrgencyCount() > 0 ? 'text-red-700' : 'text-emerald-700'}`}>Bayanihan Requests</p>
+              </div>
+              {getHighUrgencyCount() > 0 && (
+                <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                  {getHighUrgencyCount()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <h2 className="mb-2 text-sm font-bold text-gray-900">Quick Actions</h2>
@@ -165,6 +185,25 @@ export default function CaptainDashboard() {
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Review Complaints</p>
                     <p className="text-[10px] text-gray-500">{activeComplaints} cases need attention</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/staff/bayanihan">
+            <Card className="border-0 shadow-sm transition-all active:scale-[0.98]">
+              <CardContent className="flex items-center justify-between p-3">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${getHighUrgencyCount() > 0 ? 'bg-red-100' : 'bg-emerald-100'}`}>
+                    <HandHeart className={`h-5 w-5 ${getHighUrgencyCount() > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Bayanihan Requests</p>
+                    <p className="text-[10px] text-gray-500">
+                      {getPendingCount()} pending{getHighUrgencyCount() > 0 ? `, ${getHighUrgencyCount()} urgent` : ''}
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -237,6 +276,13 @@ export default function CaptainDashboard() {
                       )}
                     </div>
                   </div>
+                  {cert.staffSignature && (
+                    <img 
+                      src={cert.staffSignature} 
+                      alt="Signature" 
+                      className="mr-2 h-6 w-auto opacity-50"
+                    />
+                  )}
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       cert.status === "ready" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
