@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
-import { ArrowLeft, Shield, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 
 // Demo staff accounts
 const DEMO_STAFF = [
@@ -66,17 +66,16 @@ export default function StaffLoginPage() {
       </header>
 
       {/* Main */}
-      <main className="flex flex-1 flex-col items-center justify-center px-6 pb-12">
+      <main className="flex flex-1 flex-col items-center pt-2 px-6 pb-12">
         {/* Logo */}
-        <div className="mb-6 flex flex-col items-center">
-          <div className="relative mb-4 h-16 w-16">
-            <Image src="/images/logo.png" alt="Barangay Mawaque Seal" fill className="object-contain" />
+        <div className="mb-1.5 flex flex-col items-center">
+          <div className="relative mb-2 h-64 w-64">
+            <Image src="/images/bagongpilipinas-logo-main.png" alt="Bagong Pilipinas Logo" fill className="object-contain" />
           </div>
-          <div className="flex items-center gap-2 text-emerald-600">
-            <Shield className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wider">Staff Portal</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900">Barangay Mawaque</h1>
+          <h1 className="mt-0.5 text-2xl font-bold text-slate-900">
+            Barangay{' '}
+            <span className="text-[#22c55e] font-black">Linkod App</span>
+          </h1>
           <p className="mt-1 text-sm text-slate-500">Official Staff Login</p>
         </div>
 
