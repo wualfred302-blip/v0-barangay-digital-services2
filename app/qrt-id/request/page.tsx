@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
+import { useQRT } from "@/lib/qrt-context"
 import { cn } from "@/lib/utils"
 import {
   ArrowLeft,
@@ -47,6 +48,7 @@ const calculateAge = (birthDate: string): number => {
 
 export default function QrtIdRequestPage() {
   const { user } = useAuth()
+  const { setCurrentRequest } = useQRT()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [showErrors, setShowErrors] = useState(false)
@@ -689,7 +691,37 @@ export default function QrtIdRequestPage() {
             </>
           ) : (
             <Button
-              onClick={() => router.push("/payment")}
+              onClick={() => {
+                // Save QRT request data to context before navigation
+                const amount = formData.requestType === "rush" ? 200 : 100
+                const now = new Date().toISOString()
+                const qrtRequestData = {
+                  id: `temp_qrt_${Date.now()}`,
+                  userId: user?.id || "",
+                  fullName: formData.fullName,
+                  birthDate: formData.birthDate,
+                  age: formData.age,
+                  gender: formData.gender,
+                  civilStatus: formData.civilStatus,
+                  birthPlace: formData.birthPlace,
+                  address: formData.address,
+                  height: formData.height,
+                  weight: formData.weight,
+                  yearsResident: formData.yearsResident,
+                  citizenship: formData.citizenship,
+                  photoUrl: formData.photoBase64, // Use photoUrl to match schema (base64 data URL works here)
+                  emergencyContactName: formData.emergencyContactName,
+                  emergencyContactAddress: formData.emergencyContactAddress,
+                  emergencyContactPhone: formData.emergencyContactPhone,
+                  emergencyContactRelationship: formData.emergencyContactRelationship,
+                  requestType: formData.requestType,
+                  amount,
+                  status: "pending" as const,
+                  createdAt: now,
+                }
+                setCurrentRequest(qrtRequestData)
+                router.push("/payment")
+              }}
               className="h-14 w-full rounded-xl bg-[#10B981] text-lg font-bold hover:bg-[#059669] transition-colors"
             >
               Proceed to Payment • ₱{formData.requestType === "rush" ? "200" : "100"}

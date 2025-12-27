@@ -8,27 +8,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, IdCard, ChevronRight, FileText } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { useQRT } from "@/lib/qrt-context"
 import { BottomNav } from "@/components/bottom-nav"
 import { cn } from "@/lib/utils"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
-
-// Temporary hook until QRT context is created
-const useQRT = () => {
-  const [qrtIds, setQrtIds] = useState<any[]>([])
-  // Load from localStorage for demo
-  useEffect(() => {
-    const stored = localStorage.getItem("barangay_qrt_ids")
-    if (stored) setQrtIds(JSON.parse(stored))
-  }, [])
-  return { qrtIds }
-}
 
 type FilterType = "all" | "processing" | "ready"
 
 export default function QrtIdListPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading, user } = useAuth()
-  const { qrtIds } = useQRT()
+  const { qrtIds, getUserQRTIds } = useQRT()
   const [filter, setFilter] = useState<FilterType>("all")
 
   useEffect(() => {
@@ -45,9 +35,8 @@ export default function QrtIdListPage() {
     )
   }
 
-  // Filter QRT IDs for the current user (if user ID matching is possible with the mock data)
-  // Since mock data might not have userId, we'll assume all local storage data belongs to the user for this demo
-  const myQrtIds = qrtIds
+  // Filter QRT IDs for the current user
+  const myQrtIds = user?.id ? getUserQRTIds(user.id) : qrtIds
 
   const filteredIds = myQrtIds.filter((item) => {
     if (filter === "all") return true
@@ -147,7 +136,7 @@ export default function QrtIdListPage() {
                           </div>
                           <p className="font-semibold text-[#1A1A1A]">{item.qrtCode || "Processing..."}</p>
                           <p className="text-sm text-gray-500">
-                            Requested: {new Date(item.createdAt).toLocaleDateString("en-US", {
+                            Requested: {new Date(item.requestDate || item.createdAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",

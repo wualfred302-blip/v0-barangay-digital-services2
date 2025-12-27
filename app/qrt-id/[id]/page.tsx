@@ -20,25 +20,10 @@ import {
 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { useAuth } from "@/lib/auth-context"
+import { useQRT } from "@/lib/qrt-context"
 import { cn } from "@/lib/utils"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
 import { IDCardPreview } from "@/components/id-card-preview"
-
-// Temporary hook until QRT context is created
-const useQRT = () => {
-  const [qrtIds, setQrtIds] = useState<any[]>([])
-  
-  useEffect(() => {
-    const stored = localStorage.getItem("barangay_qrt_ids")
-    if (stored) setQrtIds(JSON.parse(stored))
-  }, [])
-  
-  const getQRTById = (id: string) => {
-    return qrtIds.find(qrt => qrt.id === id)
-  }
-  
-  return { qrtIds, getQRTById }
-}
 
 export default function QrtIdDetailPage() {
   const router = useRouter()
@@ -59,23 +44,12 @@ export default function QrtIdDetailPage() {
   }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
-    // Small delay to ensure qrtIds are loaded from local storage in the hook
-    const timer = setTimeout(() => {
-      const found = getQRTById(id)
-      if (found) {
-        setQrtId(found)
-      } else if (!authLoading && useQRT().qrtIds.length > 0) {
-        // Only redirect if we've attempted to load and found nothing, 
-        // but we need to wait for qrtIds to populate first. 
-        // In a real app with context, this would be cleaner.
-        // For now, we'll handle the "not found" state in the UI if it stays null
-      }
-      setLoading(false)
-    }, 500)
-    
-    return () => clearTimeout(timer)
-  }, [id, getQRTById, authLoading]) // Added getQRTById to dependencies, but since it's defined inside component in previous step (wait, I defined it outside or inside? Inside the component in the file I'm writing). 
-  // Wait, I defined useQRT outside the component in my code below.
+    const found = getQRTById(id)
+    if (found) {
+      setQrtId(found)
+    }
+    setLoading(false)
+  }, [id, getQRTById])
 
   const handleCopyLink = async () => {
     if (!qrtId) return
@@ -291,7 +265,7 @@ export default function QrtIdDetailPage() {
                 <div className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-emerald-500" />
                 <p className="text-sm font-medium text-[#111827]">Request Submitted</p>
                 <p className="text-xs text-gray-500">
-                  {new Date(qrtId.createdAt).toLocaleDateString()}
+                  {new Date(qrtId.requestDate || qrtId.createdAt).toLocaleDateString()}
                 </p>
               </div>
 
