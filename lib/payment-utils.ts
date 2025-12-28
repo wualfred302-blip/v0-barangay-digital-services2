@@ -69,23 +69,23 @@ export const validatePaymentMethod = (
 ): { isValid: boolean; error?: string } => {
   if (method === "gcash") {
     const { mobile, pin } = formData;
-    if (!mobile || !/^09\d{9}$/.test(mobile)) {
-      return { isValid: false, error: "Please enter a valid GCash mobile number (09XXXXXXXXX)" };
+    if (!mobile || !/^09\d+$/.test(mobile)) {
+      return { isValid: false, error: "Please enter a valid GCash mobile number (starting with 09)" };
     }
-    if (!pin || !/^\d{4}$/.test(pin)) {
-      return { isValid: false, error: "Please enter a valid 4-digit PIN" };
+    if (!pin || !/^\d+$/.test(pin)) {
+      return { isValid: false, error: "Please enter a valid PIN (digits only)" };
     }
   } else if (method === "maya") {
     const { mobile, pin } = formData;
-    if (!mobile || !/^09\d{9}$/.test(mobile)) {
-      return { isValid: false, error: "Please enter a valid Maya mobile number (09XXXXXXXXX)" };
+    if (!mobile || !/^09\d+$/.test(mobile)) {
+      return { isValid: false, error: "Please enter a valid Maya mobile number (starting with 09)" };
     }
-    if (!pin || !/^\d{6}$/.test(pin)) {
-      return { isValid: false, error: "Please enter a valid 6-digit PIN" };
+    if (!pin || !/^\d+$/.test(pin)) {
+      return { isValid: false, error: "Please enter a valid PIN (digits only)" };
     }
   } else if (method === "bank_transfer") {
     const { referenceNumber } = formData;
-    if (!referenceNumber || referenceNumber.length < 6) {
+    if (!referenceNumber) {
       return { isValid: false, error: "Please enter a valid transaction reference number" };
     }
   }

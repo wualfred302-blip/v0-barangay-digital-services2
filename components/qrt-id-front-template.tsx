@@ -55,6 +55,8 @@ export const QRTIDFrontTemplate = React.forwardRef<HTMLDivElement, QRTIDFrontPro
                   <img
                     src={photoUrl}
                     alt={fullName}
+                    crossOrigin="anonymous"
+                    style={{ display: "block" }}
                     className="w-full h-full object-cover"
                   />
                 ) : (

@@ -58,7 +58,7 @@ export default function RequestPage() {
       yearsOfResidency,
       residentName: user?.fullName || "Guest User",
     })
-    router.push("/payment")
+    router.push("/payment?type=certificate")
   }
 
   return (

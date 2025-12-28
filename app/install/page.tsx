@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,7 +9,20 @@ import { QRCodeSVG } from "qrcode.react"
 import { BottomNav } from "@/components/bottom-nav"
 
 export default function InstallPage() {
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://mawaque-linkod.vercel.app"
+  const [baseUrl, setBaseUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
+
+  // Only render QR code after baseUrl is available to prevent SSR/CSR divergence
+  if (!baseUrl) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#10B981] border-t-transparent" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
@@ -43,7 +57,7 @@ export default function InstallPage() {
               {/* QR Code */}
               <div className="mb-8 flex justify-center">
                 <div className="rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
-                  <QRCodeSVG value={appUrl} size={200} level="H" bgColor="#FFFFFF" fgColor="#111827" />
+                  <QRCodeSVG value={baseUrl} size={200} level="H" bgColor="#FFFFFF" fgColor="#111827" />
                 </div>
               </div>
 

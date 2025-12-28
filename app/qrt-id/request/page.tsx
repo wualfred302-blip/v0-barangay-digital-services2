@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
 import { useQRT } from "@/lib/qrt-context"
+import { useCertificates } from "@/lib/certificate-context"
 import { cn } from "@/lib/utils"
 import {
   ArrowLeft,
@@ -48,7 +49,8 @@ const calculateAge = (birthDate: string): number => {
 
 export default function QrtIdRequestPage() {
   const { user } = useAuth()
-  const { setCurrentRequest } = useQRT()
+  const { setCurrentRequestImmediate } = useQRT()
+  const { setCurrentRequest: setCertificateRequest } = useCertificates()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [showErrors, setShowErrors] = useState(false)
@@ -129,21 +131,11 @@ export default function QrtIdRequestPage() {
 
   const handleNext = () => {
     if (currentStep === 1) {
-      if (validateStep1()) {
-        setCurrentStep(2)
-        setShowErrors(false)
-        window.scrollTo(0, 0)
-      } else {
-        setShowErrors(true)
-      }
+      setCurrentStep(2)
+      window.scrollTo(0, 0)
     } else if (currentStep === 2) {
-      if (validateStep2()) {
-        setCurrentStep(3)
-        setShowErrors(false)
-        window.scrollTo(0, 0)
-      } else {
-        setShowErrors(true)
-      }
+      setCurrentStep(3)
+      window.scrollTo(0, 0)
     }
   }
 
@@ -232,7 +224,6 @@ export default function QrtIdRequestPage() {
                     </Label>
                     <Input
                       type="date"
-                      max={new Date().toISOString().split("T")[0]}
                       value={formData.birthDate}
                       onChange={(e) => handleInputChange("birthDate", e.target.value)}
                       className="h-11 rounded-xl border-[#E5E7EB] bg-[#F9FAFB] focus:bg-white transition-colors"
@@ -692,35 +683,38 @@ export default function QrtIdRequestPage() {
           ) : (
             <Button
               onClick={() => {
+                // Clear any stale certificate data
+                setCertificateRequest(null)
+
                 // Save QRT request data to context before navigation
                 const amount = formData.requestType === "rush" ? 200 : 100
                 const now = new Date().toISOString()
                 const qrtRequestData = {
                   id: `temp_qrt_${Date.now()}`,
-                  userId: user?.id || "",
-                  fullName: formData.fullName,
-                  birthDate: formData.birthDate,
-                  age: formData.age,
-                  gender: formData.gender,
-                  civilStatus: formData.civilStatus,
-                  birthPlace: formData.birthPlace,
-                  address: formData.address,
-                  height: formData.height,
-                  weight: formData.weight,
-                  yearsResident: formData.yearsResident,
-                  citizenship: formData.citizenship,
-                  photoUrl: formData.photoBase64, // Use photoUrl to match schema (base64 data URL works here)
-                  emergencyContactName: formData.emergencyContactName,
-                  emergencyContactAddress: formData.emergencyContactAddress,
-                  emergencyContactPhone: formData.emergencyContactPhone,
-                  emergencyContactRelationship: formData.emergencyContactRelationship,
+                  userId: user?.id || "demo_user",
+                  fullName: formData.fullName || "Demo User",
+                  birthDate: formData.birthDate || "1990-01-01",
+                  age: formData.age || 30,
+                  gender: formData.gender || "Male",
+                  civilStatus: formData.civilStatus || "Single",
+                  birthPlace: formData.birthPlace || "Mawaque, Mabalacat",
+                  address: formData.address || "123 Demo Street, Barangay Mawaque",
+                  height: formData.height || "170",
+                  weight: formData.weight || "70",
+                  yearsResident: formData.yearsResident || 5,
+                  citizenship: formData.citizenship || "Filipino",
+                  photoUrl: formData.photoBase64 || "",
+                  emergencyContactName: formData.emergencyContactName || "Emergency Contact",
+                  emergencyContactAddress: formData.emergencyContactAddress || "Same Address",
+                  emergencyContactPhone: formData.emergencyContactPhone || "09123456789",
+                  emergencyContactRelationship: formData.emergencyContactRelationship || "Parent",
                   requestType: formData.requestType,
                   amount,
                   status: "pending" as const,
                   createdAt: now,
                 }
-                setCurrentRequest(qrtRequestData)
-                router.push("/payment")
+                setCurrentRequestImmediate(qrtRequestData)
+                router.push("/payment?type=qrt")
               }}
               className="h-14 w-full rounded-xl bg-[#10B981] text-lg font-bold hover:bg-[#059669] transition-colors"
             >

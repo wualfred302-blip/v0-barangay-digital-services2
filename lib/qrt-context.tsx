@@ -48,7 +48,9 @@ export interface QRTIDRequest {
 interface QRTContextType {
   qrtIds: QRTIDRequest[]
   currentRequest: Partial<QRTIDRequest> | null
+  isLoaded: boolean
   setCurrentRequest: (request: Partial<QRTIDRequest> | null) => void
+  setCurrentRequestImmediate: (request: Partial<QRTIDRequest> | null) => void
   addQRTRequest: (request: QRTIDRequest) => void
   updateQRTStatus: (
     id: string,
@@ -178,11 +180,26 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
     [qrtIds]
   )
 
+  const setCurrentRequestImmediate = useCallback((request: Partial<QRTIDRequest> | null) => {
+    setCurrentRequest(request)
+    try {
+      if (request) {
+        localStorage.setItem(CURRENT_REQUEST_KEY, JSON.stringify(request))
+      } else {
+        localStorage.removeItem(CURRENT_REQUEST_KEY)
+      }
+    } catch (error) {
+      console.error("Failed to save current request:", error)
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       qrtIds,
       currentRequest,
+      isLoaded,
       setCurrentRequest,
+      setCurrentRequestImmediate,
       addQRTRequest,
       updateQRTStatus,
       getQRTByCode,
@@ -192,11 +209,13 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
     [
       qrtIds,
       currentRequest,
+      isLoaded,
       addQRTRequest,
       updateQRTStatus,
       getQRTByCode,
       getUserQRTIds,
       getQRTById,
+      setCurrentRequestImmediate,
     ]
   )
 

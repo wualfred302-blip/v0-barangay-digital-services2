@@ -41,31 +41,56 @@ export async function generateQRTIDImages(
 ): Promise<GenerateQRTIDResult> {
   try {
     // Configure html2canvas options for high quality output
+    // CRITICAL: Removed width/height to prevent conflicts with scale
     const canvasOptions = {
       scale: 2, // 2x resolution for better quality
       useCORS: true, // Enable cross-origin images
-      allowTaint: true,
+      allowTaint: false, // Stricter CORS handling
       backgroundColor: "#ffffff",
-      logging: false,
-      width: 856,
-      height: 540,
+      logging: true, // Enable logging for debugging
+      // Let html2canvas calculate dimensions from element size
     }
 
-    // Generate front side
-    const frontCanvas = await html2canvas(frontElement, canvasOptions)
+    console.log("[html2canvas] Starting front side capture...")
+    // Generate front side with retry logic
+    let frontCanvas
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        frontCanvas = await html2canvas(frontElement, canvasOptions)
+        console.log("[html2canvas] Front side SUCCESS on attempt", attempt)
+        break
+      } catch (error) {
+        console.error(`[html2canvas] Front side attempt ${attempt} failed:`, error)
+        if (attempt === 3) throw error
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
     const frontImageUrl = frontCanvas.toDataURL("image/png", 1.0)
 
-    // Generate back side
-    const backCanvas = await html2canvas(backElement, canvasOptions)
+    console.log("[html2canvas] Starting back side capture...")
+    // Generate back side with retry logic
+    let backCanvas
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        backCanvas = await html2canvas(backElement, canvasOptions)
+        console.log("[html2canvas] Back side SUCCESS on attempt", attempt)
+        break
+      } catch (error) {
+        console.error(`[html2canvas] Back side attempt ${attempt} failed:`, error)
+        if (attempt === 3) throw error
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
     const backImageUrl = backCanvas.toDataURL("image/png", 1.0)
 
+    console.log("[html2canvas] Both sides generated successfully")
     return {
       success: true,
       frontImageUrl,
       backImageUrl,
     }
   } catch (error) {
-    console.error("QRT ID generation error:", error)
+    console.error("[html2canvas] QRT ID generation error:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate ID images",

@@ -13,11 +13,10 @@ interface PaymentFormProps {
 }
 
 export function GCashForm({ onSubmit, isLoading }: PaymentFormProps) {
-  const [formData, setFormData] = useState({ mobile: "", pin: "" })
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    // Auto-submit with demo data
+    onSubmit({ mobile: "09171234567", pin: "1234" })
   }
 
   return (
@@ -27,33 +26,11 @@ export function GCashForm({ onSubmit, isLoading }: PaymentFormProps) {
           <div className="h-12 w-32 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xl tracking-wider">GCash</div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="gcash-mobile" className="text-white/90">Mobile Number</Label>
-            <Input
-              id="gcash-mobile"
-              placeholder="09XX XXX XXXX"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/50"
-              value={formData.mobile}
-              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              maxLength={11}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="gcash-pin" className="text-white/90">MPIN</Label>
-            <Input
-              id="gcash-pin"
-              type="password"
-              placeholder="4-digit PIN"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/50"
-              value={formData.pin}
-              onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-              maxLength={4}
-              required
-            />
-          </div>
-          <Button 
-            type="submit" 
+          <p className="text-white/80 text-sm text-center mb-4">
+            Click the button below to proceed with GCash payment
+          </p>
+          <Button
+            type="submit"
             className="w-full bg-white text-[#007DFE] hover:bg-white/90 h-12 mt-2 font-semibold"
             disabled={isLoading}
           >
@@ -66,11 +43,10 @@ export function GCashForm({ onSubmit, isLoading }: PaymentFormProps) {
 }
 
 export function MayaForm({ onSubmit, isLoading }: PaymentFormProps) {
-  const [formData, setFormData] = useState({ mobile: "", pin: "" })
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    // Auto-submit with demo data
+    onSubmit({ mobile: "09171234567", pin: "123456" })
   }
 
   return (
@@ -80,33 +56,11 @@ export function MayaForm({ onSubmit, isLoading }: PaymentFormProps) {
            <div className="h-12 w-32 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xl tracking-wider">Maya</div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="maya-mobile" className="text-white/90">Mobile Number</Label>
-            <Input
-              id="maya-mobile"
-              placeholder="09XX XXX XXXX"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/50"
-              value={formData.mobile}
-              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              maxLength={11}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="maya-pin" className="text-white/90">Password</Label>
-            <Input
-              id="maya-pin"
-              type="password"
-              placeholder="6-digit PIN"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/50"
-              value={formData.pin}
-              onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-              maxLength={6}
-              required
-            />
-          </div>
-          <Button 
-            type="submit" 
+          <p className="text-white/80 text-sm text-center mb-4">
+            Click the button below to proceed with Maya payment
+          </p>
+          <Button
+            type="submit"
             className="w-full bg-white text-[#00D632] hover:bg-white/90 h-12 mt-2 font-semibold"
             disabled={isLoading}
           >
@@ -190,7 +144,6 @@ export function BankTransferForm({ onSubmit, isLoading }: PaymentFormProps) {
             value={formData.referenceNumber}
             onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
             required
-            minLength={6}
             className="bg-white"
           />
         </div>

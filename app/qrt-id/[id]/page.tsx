@@ -36,6 +36,7 @@ export default function QrtIdDetailPage() {
   const [isCopied, setIsCopied] = useState(false)
   const [showBackSide, setShowBackSide] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [baseUrl, setBaseUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -51,29 +52,202 @@ export default function QrtIdDetailPage() {
     setLoading(false)
   }, [id, getQRTById])
 
-  const handleCopyLink = async () => {
-    if (!qrtId) return
-    const url = `${window.location.origin}/verify/qrt/${qrtId.qrtCode}`
-    try {
-      await navigator.clipboard.writeText(url)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch (err) {
-      console.error("Failed to copy link", err)
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
+
+  const handleShare = async () => {
+    if (!qrtId || !baseUrl) return
+    const url = `${baseUrl}/verify/qrt/${qrtId.qrtCode}`
+    const shareData = {
+      title: `QRT ID - ${qrtId.fullName}`,
+      text: `Verify my Barangay Mawaque QRT ID: ${qrtId.qrtCode}`,
+      url: url
     }
+
+    try {
+      // Try Web Share API first (better for mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback to clipboard copy
+        await navigator.clipboard.writeText(url)
+        setIsCopied(true)
+        setTimeout(() => setIsCopied(false), 2000)
+      }
+    } catch (err) {
+      // If share was cancelled or failed, try clipboard
+      if ((err as Error).name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(url)
+          setIsCopied(true)
+          setTimeout(() => setIsCopied(false), 2000)
+        } catch (clipErr) {
+          console.error("Failed to copy link", clipErr)
+        }
+      }
+    }
+  }
+
+  const handlePrint = () => {
+    if (!qrtId) return
+
+    // Create a printable window with both sides of the ID
+    const printWindow = window.open('', '_blank', 'width=900,height=700')
+    if (!printWindow) {
+      alert('Please allow popups to print your ID')
+      return
+    }
+
+    const frontImage = qrtId.idFrontImageUrl
+    const backImage = qrtId.idBackImageUrl
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QRT ID - ${qrtId.fullName}</title>
+          <style>
+            @media print {
+              @page { margin: 0.5in; size: landscape; }
+              body { margin: 0; }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              text-align: center;
+            }
+            .id-container {
+              display: flex;
+              flex-direction: column;
+              gap: 30px;
+              align-items: center;
+            }
+            .id-card {
+              width: 428px;
+              height: 270px;
+              border: 2px solid #333;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .id-card img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+            .id-card-placeholder {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+              color: #0369a1;
+            }
+            .label {
+              font-size: 12px;
+              color: #666;
+              margin-bottom: 10px;
+              font-weight: 600;
+            }
+            h1 {
+              margin-bottom: 20px;
+              color: #1f2937;
+            }
+            .info {
+              margin-top: 20px;
+              font-size: 14px;
+              color: #4b5563;
+            }
+            .print-btn {
+              margin-top: 20px;
+              padding: 12px 32px;
+              background: #10b981;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-size: 16px;
+              cursor: pointer;
+            }
+            .print-btn:hover { background: #059669; }
+            @media print { .print-btn { display: none; } }
+          </style>
+        </head>
+        <body>
+          <h1>QRT ID Card - ${qrtId.qrtCode}</h1>
+          <div class="id-container">
+            <div>
+              <div class="label">FRONT SIDE</div>
+              <div class="id-card">
+                ${frontImage
+                  ? `<img src="${frontImage}" alt="Front of ID" />`
+                  : `<div class="id-card-placeholder">
+                      <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zM9 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6 5H6v-1c0-1.3 2.7-2 4-2s4 .7 4 2v1zm5-3h-4v-1h4v1zm0-2h-4v-1h4v1zm0-2h-4V9h4v1z"/>
+                      </svg>
+                      <p style="margin-top:8px;">Front Side - ${qrtId.fullName}</p>
+                    </div>`
+                }
+              </div>
+            </div>
+            <div>
+              <div class="label">BACK SIDE</div>
+              <div class="id-card">
+                ${backImage
+                  ? `<img src="${backImage}" alt="Back of ID" />`
+                  : `<div class="id-card-placeholder">
+                      <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zM4 17V7h16v10H4z"/>
+                        <path d="M6 9h12v2H6zm0 3h8v2H6z"/>
+                      </svg>
+                      <p style="margin-top:8px;">Back Side - Emergency Contact Info</p>
+                    </div>`
+                }
+              </div>
+            </div>
+          </div>
+          <div class="info">
+            <strong>Name:</strong> ${qrtId.fullName} |
+            <strong>QRT Code:</strong> ${qrtId.qrtCode} |
+            <strong>Issued:</strong> ${qrtId.issuedDate ? new Date(qrtId.issuedDate).toLocaleDateString() : 'N/A'}
+          </div>
+          <button class="print-btn" onclick="window.print()">Print ID Card</button>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
   }
 
   const handleDownload = async () => {
     if (!qrtId) return
     setIsDownloading(true)
-    
-    // Simulate download delay
-    setTimeout(() => {
-      // In a real implementation, this would download the actual images
-      // For now we'll just alert
-      alert("Downloading ID images...")
+
+    try {
+      const { downloadImage } = await import("@/lib/qrt-id-generator")
+
+      // Download front if available
+      if (qrtId.idFrontImageUrl) {
+        downloadImage(qrtId.idFrontImageUrl, `${qrtId.qrtCode}-front.png`)
+      }
+
+      // Small delay then download back
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      if (qrtId.idBackImageUrl) {
+        downloadImage(qrtId.idBackImageUrl, `${qrtId.qrtCode}-back.png`)
+      }
+
+      if (!qrtId.idFrontImageUrl && !qrtId.idBackImageUrl) {
+        alert("ID card images are not yet generated. Please try again later.")
+      }
+    } catch (err) {
+      console.error("Download failed:", err)
+      alert("Failed to download. Please try again.")
+    } finally {
       setIsDownloading(false)
-    }, 1500)
+    }
   }
 
   if (authLoading || loading) {
@@ -95,7 +269,16 @@ export default function QrtIdDetailPage() {
     )
   }
 
-  const verifyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify/qrt/${qrtId.qrtCode}`
+  // Only render QR code and related UI after baseUrl is available to prevent SSR/CSR divergence
+  if (!baseUrl) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#10B981] border-t-transparent" />
+      </div>
+    )
+  }
+
+  const verifyUrl = `${baseUrl}/verify/qrt/${qrtId.qrtCode}`
   const qrData = JSON.stringify({
     qrtCode: qrtId.qrtCode,
     fullName: qrtId.fullName,
@@ -321,7 +504,7 @@ export default function QrtIdDetailPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={handleCopyLink}
+              onClick={handleShare}
               disabled={!isReady}
               className="h-[52px] flex-1 rounded-xl border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB] bg-transparent"
             >
@@ -330,6 +513,7 @@ export default function QrtIdDetailPage() {
             </Button>
             <Button
               variant="outline"
+              onClick={handlePrint}
               disabled={!isReady}
               className="h-[52px] flex-1 rounded-xl border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB] bg-transparent"
             >

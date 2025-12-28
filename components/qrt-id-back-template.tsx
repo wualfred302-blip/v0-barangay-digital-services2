@@ -138,7 +138,13 @@ export const QRTIDBackTemplate = React.forwardRef<HTMLDivElement, QRTIDBackProps
                 Scan to Verify
               </div>
               {qrCodeDataUrl ? (
-                <img src={qrCodeDataUrl} alt="QR Code" className="w-[180px] h-[180px]" />
+                <img
+                  src={qrCodeDataUrl}
+                  alt="QR Code"
+                  crossOrigin="anonymous"
+                  style={{ display: "block" }}
+                  className="w-[180px] h-[180px]"
+                />
               ) : (
                 <div className="w-[180px] h-[180px] bg-gray-100 flex items-center justify-center">
                   <span className="text-gray-400 text-xs">QR Code</span>

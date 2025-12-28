@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -19,10 +19,24 @@ import { QRTIDFrontTemplate } from "@/components/qrt-id-front-template"
 import { QRTIDBackTemplate } from "@/components/qrt-id-back-template"
 import { generateQRTIDImages } from "@/lib/qrt-id-generator"
 
+// Wrapper component to handle Suspense for useSearchParams
 export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
+  )
+}
+
+function PaymentPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { currentRequest, addCertificate, setCurrentRequest } = useCertificates()
-  const { currentRequest: qrtRequest, setCurrentRequest: setQrtRequest, addQRTRequest } = useQRT()
+  const { currentRequest: qrtRequest, setCurrentRequest: setQrtRequest, addQRTRequest, isLoaded: qrtContextLoaded } = useQRT()
   const { addPayment } = usePayment()
 
   const [isProcessing, setIsProcessing] = useState(false)
@@ -30,6 +44,12 @@ export default function PaymentPage() {
   const [lastTransaction, setLastTransaction] = useState<PaymentTransaction | null>(null)
   const [showReceipt, setShowReceipt] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Track if payment was completed to prevent redirect after clearing contexts
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
+
+  // Get payment type from URL parameter - this is the source of truth for the flow type
+  const paymentType = searchParams.get("type") // "qrt" or "certificate" or null
 
   // State for computed template data (needed for image generation)
   const [templateData, setTemplateData] = useState<{
@@ -42,22 +62,49 @@ export default function PaymentPage() {
   const frontRef = useRef<HTMLDivElement>(null)
   const backRef = useRef<HTMLDivElement>(null)
 
+  // Wait for QRT context to load before checking if we should redirect
+  // IMPORTANT: Don't redirect if payment was completed (contexts are intentionally cleared)
+  // IMPORTANT: Use URL parameter to determine correct redirect target
   useEffect(() => {
-    if (!currentRequest && !qrtRequest) {
-      router.push("/request")
+    if (paymentCompleted || showReceipt) {
+      // Don't redirect after payment is complete
+      return
     }
-  }, [currentRequest, qrtRequest, router])
 
-  if (!currentRequest && !qrtRequest) return null
+    if (qrtContextLoaded && !currentRequest && !qrtRequest) {
+      // Redirect to the appropriate page based on payment type URL parameter
+      if (paymentType === "qrt") {
+        router.push("/qrt-id/request")
+      } else {
+        router.push("/request")
+      }
+    }
+  }, [qrtContextLoaded, currentRequest, qrtRequest, router, paymentCompleted, showReceipt, paymentType])
 
-  // Determine payment type
-  const isQRTPayment = !!qrtRequest
+  // Show loading spinner while QRT context is loading from localStorage
+  if (!qrtContextLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
+      </div>
+    )
+  }
+
+  // Don't render null if payment was completed - show receipt instead
+  if (!currentRequest && !qrtRequest && !paymentCompleted && !showReceipt) return null
+
+  // Determine payment type - use URL parameter as primary source, fallback to context
+  const isQRTPayment = paymentType === "qrt" || !!qrtRequest
 
   // Calculate total with processing fee
-  const fee = isQRTPayment ? (qrtRequest.amount || 100) : (currentRequest?.amount || 50)
+  // Use optional chaining since contexts may be null after payment completion
+  const fee = isQRTPayment ? (qrtRequest?.amount || 100) : (currentRequest?.amount || 50)
   const certFee = fee
   const processingFee = 5
   const totalAmount = certFee + processingFee
+
+  // Determine back URL based on payment type
+  const backUrl = isQRTPayment ? "/qrt-id/request" : "/request"
 
   const handlePaymentSubmit = async (method: "gcash" | "maya" | "bank_transfer", formData: any) => {
     setError(null)
@@ -134,21 +181,135 @@ export default function PaymentPage() {
           expiryDate: expiryDateFormatted,
         })
 
-        // Wait for React to re-render the templates with new data
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
         // 5. Generate ID Card Images
+        // Wait for React to fully re-render and for images to load
         let frontImageUrl = ""
         let backImageUrl = ""
 
+        console.log("[QRT ID Generation] Starting image generation...")
+        console.log("[QRT ID Generation] Photo URL:", qrtRequest?.photoUrl ? "Present" : "MISSING")
+        console.log("[QRT ID Generation] QR Code:", qrCodeDataUrl ? "Generated" : "MISSING")
+        console.log("[QRT ID Generation] Front Ref:", frontRef.current ? "Ready" : "NOT FOUND")
+        console.log("[QRT ID Generation] Back Ref:", backRef.current ? "Ready" : "NOT FOUND")
+
         try {
-          if (frontRef.current && backRef.current) {
-            const result = await generateQRTIDImages(frontRef.current, backRef.current)
-            frontImageUrl = result.frontImageUrl
-            backImageUrl = result.backImageUrl
+          // Helper function to wait for an image to load
+          const waitForImageLoad = (imgSrc: string): Promise<void> => {
+            return new Promise((resolve) => {
+              if (!imgSrc) {
+                console.log("[QRT ID Generation] No image to load")
+                resolve()
+                return
+              }
+              const img = new window.Image()
+              img.onload = () => {
+                console.log("[QRT ID Generation] Image loaded successfully")
+                resolve()
+              }
+              img.onerror = (err) => {
+                console.error("[QRT ID Generation] Image load failed:", err)
+                resolve() // Continue even if image fails
+              }
+              img.src = imgSrc
+              // Timeout after 3 seconds
+              setTimeout(() => {
+                console.log("[QRT ID Generation] Image load timeout (3s)")
+                resolve()
+              }, 3000)
+            })
+          }
+
+          // Pre-load the photo and QR code to ensure they're in browser cache
+          const preloadPromises: Promise<void>[] = []
+          if (qrtRequest?.photoUrl) {
+            console.log("[QRT ID Generation] Preloading user photo...")
+            preloadPromises.push(waitForImageLoad(qrtRequest.photoUrl))
+          }
+          if (qrCodeDataUrl) {
+            console.log("[QRT ID Generation] Preloading QR code...")
+            preloadPromises.push(waitForImageLoad(qrCodeDataUrl))
+          }
+          await Promise.all(preloadPromises)
+
+          console.log("[QRT ID Generation] Images preloaded, waiting for DOM render...")
+
+          // Wait for React to re-render the templates with new data
+          // Use multiple animation frames to ensure DOM is painted
+          await new Promise((resolve) => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setTimeout(resolve, 1000) // Increased to 1 second for more reliable rendering
+              })
+            })
+          })
+
+          console.log("[QRT ID Generation] DOM rendered, checking refs...")
+
+          // Verify refs exist
+          if (!frontRef.current || !backRef.current) {
+            console.error("[QRT ID Generation] FAILED: Refs not available", {
+              frontRef: !!frontRef.current,
+              backRef: !!backRef.current
+            })
+            throw new Error("Templates not ready - refs missing")
+          }
+
+          console.log("[QRT ID Generation] Refs ready, waiting for images to load in DOM...")
+
+          // Wait for all images in the templates to fully load
+          const waitForDOMImages = async (ref: React.RefObject<HTMLDivElement>) => {
+            if (!ref.current) return
+
+            const images = ref.current.querySelectorAll('img')
+            console.log(`[QRT ID Generation] Found ${images.length} images in template`)
+
+            await Promise.all(Array.from(images).map((img, index) => {
+              if (img.complete) {
+                console.log(`[QRT ID Generation] Image ${index} already loaded`)
+                return Promise.resolve()
+              }
+              return new Promise<void>(resolve => {
+                img.onload = () => {
+                  console.log(`[QRT ID Generation] Image ${index} loaded successfully`)
+                  resolve()
+                }
+                img.onerror = (err) => {
+                  console.warn(`[QRT ID Generation] Image ${index} failed to load:`, err)
+                  resolve() // Continue even if image fails
+                }
+                // Timeout fallback - don't wait forever
+                setTimeout(() => {
+                  console.warn(`[QRT ID Generation] Image ${index} load timeout (3s)`)
+                  resolve()
+                }, 3000)
+              })
+            }))
+          }
+
+          await waitForDOMImages(frontRef)
+          await waitForDOMImages(backRef)
+
+          console.log("[QRT ID Generation] All images loaded, calling generateQRTIDImages...")
+
+          // Verify photo is present if provided
+          const frontImg = frontRef.current.querySelector('img')
+          if (qrtRequest?.photoUrl && frontImg && !frontImg.complete) {
+            console.warn("[QRT ID Generation] Photo not fully loaded, proceeding anyway...")
+          }
+
+          const result = await generateQRTIDImages(frontRef.current, backRef.current)
+          console.log("[QRT ID Generation] Generation result:", result)
+
+          if (result.success) {
+            frontImageUrl = result.frontImageUrl || ""
+            backImageUrl = result.backImageUrl || ""
+            console.log("[QRT ID Generation] SUCCESS - Front image:", frontImageUrl ? `${frontImageUrl.substring(0, 50)}...` : "EMPTY")
+            console.log("[QRT ID Generation] SUCCESS - Back image:", backImageUrl ? `${backImageUrl.substring(0, 50)}...` : "EMPTY")
+          } else {
+            console.error("[QRT ID Generation] FAILED:", result.error)
           }
         } catch (imgError) {
-          console.error("Image generation error:", imgError)
+          console.error("[QRT ID Generation] EXCEPTION:", imgError)
           // Continue without images - they can be generated later
         }
 
@@ -189,6 +350,9 @@ export default function PaymentPage() {
 
         // 7. Save to Context
         addQRTRequest(newQRTRecord)
+
+        // IMPORTANT: Set paymentCompleted BEFORE clearing context to prevent redirect
+        setPaymentCompleted(true)
         setQrtRequest(null)
         setTemplateData(null)
 
@@ -220,6 +384,8 @@ export default function PaymentPage() {
 
         addCertificate(newCertificate)
 
+        // IMPORTANT: Set paymentCompleted BEFORE clearing context to prevent redirect
+        setPaymentCompleted(true)
         setIsProcessing(false)
         setShowReceipt(true)
       }
@@ -235,9 +401,11 @@ export default function PaymentPage() {
     setShowReceipt(false)
     if (isQRTPayment) {
       setQrtRequest(null)
+      setCurrentRequest(null)
       router.push("/qrt-id")
     } else {
       setCurrentRequest(null)
+      setQrtRequest(null)
       router.push("/requests")
     }
   }
@@ -246,9 +414,11 @@ export default function PaymentPage() {
     setShowReceipt(false)
     if (isQRTPayment) {
       setQrtRequest(null)
+      setCurrentRequest(null)
       router.push("/qrt-id")
     } else {
       setCurrentRequest(null)
+      setQrtRequest(null)
       router.push("/requests")
     }
   }
@@ -264,7 +434,7 @@ export default function PaymentPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-[#E5E7EB] bg-white px-5">
-        <Link href="/request" className="rounded-lg p-1 transition-colors hover:bg-[#F9FAFB]">
+        <Link href={backUrl} className="rounded-lg p-1 transition-colors hover:bg-[#F9FAFB]">
           <ArrowLeft className="h-5 w-5 text-[#374151]" />
         </Link>
         <div className="flex items-center gap-3">
@@ -301,7 +471,7 @@ export default function PaymentPage() {
                    </h3>
                    <p className="text-sm text-gray-500">
                      {isQRTPayment
-                       ? `${qrtRequest.fullName} - ${qrtRequest.requestType === "rush" ? "Rush Processing" : "Regular Processing"}`
+                       ? `${qrtRequest?.fullName || "QRT ID"} - ${qrtRequest?.requestType === "rush" ? "Rush Processing" : "Regular Processing"}`
                        : currentRequest?.purpose}
                    </p>
                  </div>
@@ -369,37 +539,46 @@ export default function PaymentPage() {
       </main>
 
       {/* Hidden QRT ID Templates for Image Generation */}
+      {/* CRITICAL FIX: Use visibility:hidden instead of opacity/z-index tricks */}
+      {/* This keeps elements fully rendered with proper styles for html2canvas */}
+      {/* Refs are now attached directly to template components (not wrapper divs) */}
       {isQRTPayment && qrtRequest && (
-        <div style={{ position: "absolute", left: "-9999px", top: "0" }}>
-          <div ref={frontRef}>
-            <QRTIDFrontTemplate
-              qrtCode={templateData?.qrtCode || ""}
-              fullName={qrtRequest.fullName || ""}
-              birthDate={qrtRequest.birthDate || ""}
-              address={qrtRequest.address || ""}
-              gender={qrtRequest.gender || ""}
-              civilStatus={qrtRequest.civilStatus || ""}
-              birthPlace={qrtRequest.birthPlace || ""}
-              photoUrl={qrtRequest.photoUrl || ""}
-              issuedDate={templateData?.issuedDate || ""}
-            />
-          </div>
-          <div ref={backRef}>
-            <QRTIDBackTemplate
-              qrtCode={templateData?.qrtCode || ""}
-              height={qrtRequest.height || ""}
-              weight={qrtRequest.weight || ""}
-              yearsResident={qrtRequest.yearsResident || 0}
-              citizenship={qrtRequest.citizenship || ""}
-              emergencyContactName={qrtRequest.emergencyContactName || ""}
-              emergencyContactAddress={qrtRequest.emergencyContactAddress || ""}
-              emergencyContactPhone={qrtRequest.emergencyContactPhone || ""}
-              emergencyContactRelationship={qrtRequest.emergencyContactRelationship || ""}
-              qrCodeDataUrl={templateData?.qrCodeDataUrl || ""}
-              issuedDate={templateData?.issuedDate || ""}
-              expiryDate={templateData?.expiryDate || ""}
-            />
-          </div>
+        <div style={{
+          position: "fixed",
+          left: "0",
+          top: "0",
+          opacity: "1",           // Full opacity so styles compute correctly
+          visibility: "hidden",    // Hidden but fully rendered in layout
+          pointerEvents: "none",
+          zIndex: 0               // Normal stacking context
+        }}>
+          <QRTIDFrontTemplate
+            ref={frontRef}
+            qrtCode={templateData?.qrtCode || "TEMP-QRT-CODE"}
+            fullName={qrtRequest.fullName || "Test User"}
+            birthDate={qrtRequest.birthDate || "01/01/1990"}
+            address={qrtRequest.address || "Test Address"}
+            gender={qrtRequest.gender || "Male"}
+            civilStatus={qrtRequest.civilStatus || "Single"}
+            birthPlace={qrtRequest.birthPlace || "Manila"}
+            photoUrl={qrtRequest.photoUrl || ""}
+            issuedDate={templateData?.issuedDate || new Date().toLocaleDateString()}
+          />
+          <QRTIDBackTemplate
+            ref={backRef}
+            qrtCode={templateData?.qrtCode || "TEMP-QRT-CODE"}
+            height={qrtRequest.height || "170cm"}
+            weight={qrtRequest.weight || "70kg"}
+            yearsResident={qrtRequest.yearsResident || 5}
+            citizenship={qrtRequest.citizenship || "Filipino"}
+            emergencyContactName={qrtRequest.emergencyContactName || "Emergency Contact"}
+            emergencyContactAddress={qrtRequest.emergencyContactAddress || "Same Address"}
+            emergencyContactPhone={qrtRequest.emergencyContactPhone || "09123456789"}
+            emergencyContactRelationship={qrtRequest.emergencyContactRelationship || "Family"}
+            qrCodeDataUrl={templateData?.qrCodeDataUrl || ""}
+            issuedDate={templateData?.issuedDate || new Date().toLocaleDateString()}
+            expiryDate={templateData?.expiryDate || new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString()}
+          />
         </div>
       )}
     </div>

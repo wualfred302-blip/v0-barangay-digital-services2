@@ -1,0 +1,261 @@
+{
+  "timestamp": "2025-12-28T06:51:46.480Z",
+  "totalChecks": 42,
+  "passed": 42,
+  "failed": 0,
+  "successRate": 100,
+  "checks": [
+    {
+      "name": "Payment page",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT request form",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT image generator",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT context provider",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment utilities",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Front template",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Back template",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment method forms",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page imports generateQRTIDImages",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page imports QRTIDFrontTemplate",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page imports QRTIDBackTemplate",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page handles QRT payment type",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page has frontRef for template",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page has backRef for template",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Templates use visibility:hidden strategy",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page pre-loads images",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page waits for DOM render",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Generator imports html2canvas",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Generator enables CORS for images",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Generator uses 2x scale for quality",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Generator has retry logic",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Front template uses forwardRef",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Front template has CORS for images",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Front template has correct dimensions",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Back template uses forwardRef",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Back template has CORS for images",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Back template has correct dimensions",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "html2canvas installed",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "qrcode installed",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "next installed",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "react installed",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Has QRT ID generation logs",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Has html2canvas logs",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Uses console.log for debugging",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page has try-catch blocks",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Payment page catches image errors",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Generator has error handling",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Gracefully handles missing images",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT record has front image URL field",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT record has back image URL field",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT record has QR code data field",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "QRT record sets ready status",
+      "status": "✅ PASS",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}
