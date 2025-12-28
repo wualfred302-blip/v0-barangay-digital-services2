@@ -31,12 +31,12 @@ This document summarizes the testing effort for the QRT ID payment workflow. Due
 
 ### Implementation Verification: PASS (100%)
 
-```
+\`\`\`
 Total Checks: 42
 Passed: 42 ✅
 Failed: 0 ❌
 Success Rate: 100%
-```
+\`\`\`
 
 #### Categories Tested:
 1. **File Existence** (8/8 passed)
@@ -87,7 +87,7 @@ Success Rate: 100%
 ### Critical Implementation Details Verified
 
 #### Image Generation Process:
-```
+\`\`\`
 Pre-load images (3s timeout)
   ↓
 Wait for React render (1s + animation frames)
@@ -99,7 +99,7 @@ Wait for template images to load (3s timeout per image)
 Capture with html2canvas (3 retry attempts per side)
   ↓
 Generate base64 PNG data URLs
-```
+\`\`\`
 
 #### Key Features:
 - **Retry Logic:** 3 attempts per image side (front/back)
@@ -222,7 +222,7 @@ When a user completes the QRT ID payment workflow:
 4. **Final state:** QRT ID ready to view with both images
 
 ### Console Output (Success):
-```
+\`\`\`
 [QRT ID Generation] Starting image generation...
 [QRT ID Generation] Photo URL: Present
 [QRT ID Generation] QR Code: Generated
@@ -245,7 +245,7 @@ When a user completes the QRT ID payment workflow:
 [html2canvas] Both sides generated successfully
 [QRT ID Generation] SUCCESS - Front image: data:image/png;base64,...
 [QRT ID Generation] SUCCESS - Back image: data:image/png;base64,...
-```
+\`\`\`
 
 ### Timing (Expected):
 - Payment processing: ~2.4 seconds
@@ -344,24 +344,24 @@ The QRT ID payment workflow is **well-implemented** with:
 ## Quick Reference
 
 ### To verify implementation:
-```bash
+\`\`\`bash
 node verify-qrt-implementation.js
-```
+\`\`\`
 
 ### To analyze workflow:
-```bash
+\`\`\`bash
 node test-qrt-analysis.js
-```
+\`\`\`
 
 ### To read full report:
-```bash
+\`\`\`bash
 cat QRT_PAYMENT_WORKFLOW_TEST_REPORT.md
-```
+\`\`\`
 
 ### To check verification results:
-```bash
+\`\`\`bash
 cat verification-report.json
-```
+\`\`\`
 
 ---
 

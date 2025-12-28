@@ -35,7 +35,7 @@
 
 ## Current Git State
 
-```
+\`\`\`
 Branch: main
 Modified files:
   - app/install/page.tsx
@@ -51,7 +51,7 @@ Modified files:
 
 Untracked:
   - install.cmd
-```
+\`\`\`
 
 ---
 
@@ -70,7 +70,7 @@ Untracked:
 #### Solution Implemented (6 Steps)
 
 **Step 1: Fixed Refs and Visibility** (`app/payment/page.tsx` ~line 502-541)
-```tsx
+\`\`\`tsx
 // BEFORE (BROKEN):
 <div style={{ zIndex: -1000, opacity: 0.01 }}>
   <QRTIDFrontTemplate ref={frontRefWrapper} />
@@ -93,11 +93,11 @@ style={{
   pointerEvents: "none",
   zIndex: 0                  // Changed from -1000
 }}
-```
+\`\`\`
 **Why:** `visibility: hidden` keeps element in layout with all CSS applied, unlike opacity tricks or negative z-index which break rendering.
 
 **Step 2: Fixed Image Rendering** (both templates)
-```tsx
+\`\`\`tsx
 // Added to all <img> tags:
 <img
   src={photoUrl}
@@ -106,10 +106,10 @@ style={{
   style={{ display: "block" }}   // NEW - force rendering
   className="w-full h-full object-cover"
 />
-```
+\`\`\`
 
 **Step 3: Fixed html2canvas Config** (`lib/qrt-id-generator.ts` ~line 44-52)
-```typescript
+\`\`\`typescript
 const canvasOptions = {
   scale: 2,
   useCORS: true,
@@ -118,10 +118,10 @@ const canvasOptions = {
   logging: true,                 // Enable for debugging
   // REMOVED: width and height (conflicted with scale)
 }
-```
+\`\`\`
 
 **Step 4: Added Image Loading Verification** (`app/payment/page.tsx` ~line 236-244)
-```typescript
+\`\`\`typescript
 const waitForDOMImages = async (ref: React.RefObject<HTMLDivElement>) => {
   if (!ref.current) return
   const images = ref.current.querySelectorAll('img')
@@ -148,10 +148,10 @@ const waitForDOMImages = async (ref: React.RefObject<HTMLDivElement>) => {
     })
   }))
 }
-```
+\`\`\`
 
 **Step 5: Added Retry Logic** (`lib/qrt-id-generator.ts` ~line 54-67)
-```typescript
+\`\`\`typescript
 let frontCanvas
 for (let attempt = 1; attempt <= 3; attempt++) {
   try {
@@ -164,7 +164,7 @@ for (let attempt = 1; attempt <= 3; attempt++) {
     await new Promise(resolve => setTimeout(resolve, 500))
   }
 }
-```
+\`\`\`
 
 **Step 6: Enhanced Error Handling** (`app/payment/page.tsx` ~line 248-266)
 - Verify refs exist before capture
@@ -179,9 +179,9 @@ for (let attempt = 1; attempt <= 3; attempt++) {
 ### Test Case: Generate QRT ID with Photo
 
 1. **Navigate to QRT Request Page**
-   ```
+   \`\`\`
    http://localhost:3000/qrt-id/request
-   ```
+   \`\`\`
 
 2. **Fill Form and Submit**
    - Fill all required fields including uploading a photo
@@ -192,13 +192,13 @@ for (let attempt = 1; attempt <= 3; attempt++) {
    - Go to Console tab
    - Look for logs with prefix `[QRT ID Generation]` and `[html2canvas]`
    - Expected sequence:
-     ```
+     \`\`\`
      [QRT ID Generation] Found 1 images in template
      [QRT ID Generation] Image 0 already loaded
      [QRT ID Generation] Starting front side capture...
      [html2canvas] Front side SUCCESS on attempt 1
      [QRT ID Generation] Both sides generated successfully
-     ```
+     \`\`\`
 
 4. **Complete Payment**
    - Select payment method (GCash/Maya/Bank Transfer)
@@ -289,7 +289,7 @@ for (let attempt = 1; attempt <= 3; attempt++) {
 
 ### If System Provides Auto-Summary (Like Now)
 
-```
+\`\`\`
 1. Review the system-provided summary:
    - Conversation summary at top of context
    - Git status showing modified files
@@ -301,13 +301,13 @@ for (let attempt = 1; attempt <= 3; attempt++) {
    "Test the QRT ID generation fix"
    or
    "What's the next step?"
-```
+\`\`\`
 
 ### If Starting Fresh Without Auto-Summary
 
 Provide this information:
 
-```
+\`\`\`
 1. Reference the conversation:
    "Continue from [date/task description]"
    or
@@ -320,25 +320,25 @@ Provide this information:
    "I tested the QRT ID generation and got this error: [error message]"
    or
    "The images are now generating! They appear on the QRT ID page."
-```
+\`\`\`
 
 ### Most Effective Context Format
 
 If restarting, provide:
 
-```
+\`\`\`
 Project: Barangay QRT ID Payment System
 Status: Just completed 6-step fix for image generation
 Files modified: app/payment/page.tsx, components/*-template.tsx, lib/qrt-id-generator.ts
 Next step: Test if QRT ID images now generate after payment
 Link to this guide: /home/user/barangayformdemo/CONTINUATION_GUIDE.md
-```
+\`\`\`
 
 ---
 
 ## Quick Command Reference
 
-```bash
+\`\`\`bash
 # Check build status
 npm run build
 
@@ -356,7 +356,7 @@ npm run type-check
 
 # Format code
 npm run format
-```
+\`\`\`
 
 ---
 
@@ -409,9 +409,9 @@ Search for these prefixes to find logging/debugging points:
 ## Plan Mode Details
 
 If needed, the plan file is located at:
-```
+\`\`\`
 /home/user/.claude/plans/glimmering-exploring-metcalfe.md
-```
+\`\`\`
 
 This contains the detailed 6-step implementation plan with all technical decisions.
 

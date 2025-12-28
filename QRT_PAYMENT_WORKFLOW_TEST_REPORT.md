@@ -22,12 +22,12 @@ This report documents the QRT ID payment workflow based on code analysis. Automa
 - **QR Code Generation:** qrcode library
 
 #### Payment Flow:
-```
+\`\`\`
 User Navigates → Load Context → Display Summary → Select Payment →
 Process Payment → Generate QRT Code → Generate QR Code →
 Create Templates → Capture Images → Save Record → Show Receipt →
 Redirect to View Page
-```
+\`\`\`
 
 ---
 
@@ -90,7 +90,7 @@ Redirect to View Page
 **Purpose:** Validate and process payment transaction
 
 **Process Flow:**
-```javascript
+\`\`\`javascript
 1. Validate payment method and form data
 2. Set processing state (shows overlay)
 3. Rotate processing messages every 800ms:
@@ -100,7 +100,7 @@ Redirect to View Page
    - "Generating QRT ID..."
 4. Call processPayment() utility
 5. Save transaction to payment context
-```
+\`\`\`
 
 **Processing Messages (QRT-specific):**
 - 4 rotating messages vs 3 for certificates
@@ -112,20 +112,20 @@ Redirect to View Page
 **Purpose:** Create unique QRT identifier and verification QR code
 
 **QRT Code Format:**
-```javascript
+\`\`\`javascript
 QRT-{YEAR}-{6-digit-random}
 Example: QRT-2025-123456
-```
+\`\`\`
 
 **QR Code Data Structure:**
-```javascript
+\`\`\`javascript
 {
   qrtCode: "QRT-2025-123456",
   fullName: "John Doe",
   birthDate: "01/15/1990",
   issuedDate: "2025-12-28T10:30:00.000Z"
 }
-```
+\`\`\`
 
 **Implementation Details:**
 - Year: Current year
@@ -139,20 +139,20 @@ Example: QRT-2025-123456
 **Purpose:** Calculate dates and prepare data for template rendering
 
 **Date Calculations:**
-```javascript
+\`\`\`javascript
 Issued Date: Current date (formatted: "December 28, 2025")
 Expiry Date: Issued date + 1 year (formatted: "December 28, 2026")
-```
+\`\`\`
 
 **Template Data Object:**
-```typescript
+\`\`\`typescript
 {
   qrtCode: string,        // "QRT-2025-123456"
   qrCodeDataUrl: string,  // "data:image/png;base64,..."
   issuedDate: string,     // "December 28, 2025"
   expiryDate: string      // "December 28, 2026"
 }
-```
+\`\`\`
 
 **Critical Action:**
 - Calls `setTemplateData()` to trigger React re-render
@@ -167,7 +167,7 @@ Expiry Date: Issued date + 1 year (formatted: "December 28, 2026")
 #### 7.1 Pre-loading Phase (Lines 196-232)
 **Purpose:** Ensure all images are in browser cache before capture
 
-```javascript
+\`\`\`javascript
 // Pre-load user photo
 if (qrtRequest?.photoUrl) {
   await waitForImageLoad(qrtRequest.photoUrl)
@@ -177,21 +177,21 @@ if (qrtRequest?.photoUrl) {
 if (qrCodeDataUrl) {
   await waitForImageLoad(qrCodeDataUrl)
 }
-```
+\`\`\`
 
 **Timeout:** 3 seconds per image
 
 #### 7.2 DOM Render Wait (Lines 236-244)
 **Purpose:** Allow React to fully paint templates
 
-```javascript
+\`\`\`javascript
 // Multiple animation frames + timeout
 requestAnimationFrame(() => {
   requestAnimationFrame(() => {
     setTimeout(resolve, 1000)  // 1 second wait
   })
 })
-```
+\`\`\`
 
 **Why needed:**
 - React state updates are asynchronous
@@ -201,11 +201,11 @@ requestAnimationFrame(() => {
 #### 7.3 Ref Verification (Lines 248-255)
 **Purpose:** Ensure template refs are attached
 
-```javascript
+\`\`\`javascript
 if (!frontRef.current || !backRef.current) {
   throw new Error("Templates not ready - refs missing")
 }
-```
+\`\`\`
 
 **Critical Check:**
 - Verifies DOM elements exist
@@ -215,7 +215,7 @@ if (!frontRef.current || !backRef.current) {
 #### 7.4 DOM Image Loading (Lines 260-290)
 **Purpose:** Wait for all template images to complete loading
 
-```javascript
+\`\`\`javascript
 const images = ref.current.querySelectorAll('img')
 await Promise.all(Array.from(images).map((img) => {
   if (img.complete) return Promise.resolve()
@@ -225,7 +225,7 @@ await Promise.all(Array.from(images).map((img) => {
     setTimeout(() => resolve(), 3000)  // Timeout
   })
 }))
-```
+\`\`\`
 
 **Handles:**
 - Already-loaded images (img.complete)
@@ -236,17 +236,17 @@ await Promise.all(Array.from(images).map((img) => {
 #### 7.5 Image Capture (Lines 292-310)
 **Purpose:** Use html2canvas to capture templates as images
 
-```javascript
+\`\`\`javascript
 const result = await generateQRTIDImages(
   frontRef.current,
   backRef.current
 )
-```
+\`\`\`
 
 **File:** `/home/user/barangayformdemo/lib/qrt-id-generator.ts`
 
 **html2canvas Configuration:**
-```javascript
+\`\`\`javascript
 {
   scale: 2,              // 2x resolution (high quality)
   useCORS: true,         // Allow cross-origin images
@@ -254,7 +254,7 @@ const result = await generateQRTIDImages(
   backgroundColor: "#ffffff",
   logging: true          // Debug output
 }
-```
+\`\`\`
 
 **Retry Logic:**
 - 3 attempts per side (front/back)
@@ -268,12 +268,12 @@ const result = await generateQRTIDImages(
 #### 7.6 Error Handling (Lines 311-314)
 **Purpose:** Gracefully handle image generation failures
 
-```javascript
+\`\`\`javascript
 catch (imgError) {
   console.error("[QRT ID Generation] EXCEPTION:", imgError)
   // Continue without images - they can be generated later
 }
-```
+\`\`\`
 
 **Behavior:**
 - Logs detailed error
@@ -287,7 +287,7 @@ catch (imgError) {
 **Purpose:** Create complete QRT record with all data
 
 **Record Structure:**
-```typescript
+\`\`\`typescript
 {
   id: "qrt_1735393200000",
   qrtCode: "QRT-2025-123456",
@@ -330,7 +330,7 @@ catch (imgError) {
   requestType: "regular" | "rush",
   amount: 105
 }
-```
+\`\`\`
 
 **Storage:**
 - Saved to QRT context (React Context API)
@@ -343,13 +343,13 @@ catch (imgError) {
 **Purpose:** Clean up state and show success
 
 **Actions:**
-```javascript
+\`\`\`javascript
 1. setPaymentCompleted(true)    // Prevent redirect
 2. setQrtRequest(null)           // Clear form data
 3. setTemplateData(null)         // Clear template data
 4. setIsProcessing(false)        // Hide overlay
 5. setShowReceipt(true)          // Show receipt modal
-```
+\`\`\`
 
 **Order is Critical:**
 - Must set `paymentCompleted` BEFORE clearing context
@@ -368,9 +368,9 @@ catch (imgError) {
   - "View QRT ID" → Redirects to /qrt-id
 
 **Final Redirect:**
-```javascript
+\`\`\`javascript
 router.push("/qrt-id")  // View all QRT IDs including new one
-```
+\`\`\`
 
 ---
 
@@ -409,7 +409,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 - CORS-enabled images
 
 **Critical Implementation:**
-```jsx
+\`\`\`jsx
 <img
   src={photoUrl}
   alt={fullName}
@@ -417,7 +417,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
   style={{ display: "block" }}
   className="w-full h-full object-cover"
 />
-```
+\`\`\`
 
 ---
 
@@ -460,7 +460,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 ### Expected Console Output
 
 #### Success Case:
-```
+\`\`\`
 [QRT ID Generation] Starting image generation...
 [QRT ID Generation] Photo URL: Present
 [QRT ID Generation] QR Code: Generated
@@ -486,10 +486,10 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 [QRT ID Generation] Generation result: { success: true, frontImageUrl: "...", backImageUrl: "..." }
 [QRT ID Generation] SUCCESS - Front image: data:image/png;base64,iVBORw0KGgoAAAANS...
 [QRT ID Generation] SUCCESS - Back image: data:image/png;base64,iVBORw0KGgoAAAANS...
-```
+\`\`\`
 
 #### Failure Case (Missing Photo):
-```
+\`\`\`
 [QRT ID Generation] Starting image generation...
 [QRT ID Generation] Photo URL: MISSING
 [QRT ID Generation] QR Code: Generated
@@ -499,10 +499,10 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 [QRT ID Generation] Preloading QR code...
 [QRT ID Generation] Image loaded successfully
 ...
-```
+\`\`\`
 
 #### Failure Case (Refs Not Ready):
-```
+\`\`\`
 [QRT ID Generation] Starting image generation...
 [QRT ID Generation] Photo URL: Present
 [QRT ID Generation] QR Code: Generated
@@ -512,7 +512,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 [QRT ID Generation] DOM rendered, checking refs...
 [QRT ID Generation] FAILED: Refs not available { frontRef: false, backRef: false }
 [QRT ID Generation] EXCEPTION: Error: Templates not ready - refs missing
-```
+\`\`\`
 
 ---
 
@@ -520,7 +520,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 
 ### 1. Template Visibility Strategy
 **Code (Lines 545-554):**
-```jsx
+\`\`\`jsx
 <div style={{
   position: "fixed",
   left: "0",
@@ -530,7 +530,7 @@ router.push("/qrt-id")  // View all QRT IDs including new one
   pointerEvents: "none",
   zIndex: 0
 }}>
-```
+\`\`\`
 
 **Why This Approach:**
 - ❌ `display: none` - Elements not rendered, can't capture
@@ -541,21 +541,21 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 **Issue:** User photos may be from external URLs
 
 **Solution:**
-```jsx
+\`\`\`jsx
 <img
   src={photoUrl}
   crossOrigin="anonymous"
   ...
 />
-```
+\`\`\`
 
 **html2canvas Config:**
-```javascript
+\`\`\`javascript
 {
   useCORS: true,
   allowTaint: false  // Fail if CORS not allowed
 }
-```
+\`\`\`
 
 **Potential Problems:**
 - If photo server doesn't allow CORS, image won't capture
@@ -564,14 +564,14 @@ router.push("/qrt-id")  // View all QRT IDs including new one
 
 ### 3. React Ref Forwarding
 **Templates use React.forwardRef:**
-```typescript
+\`\`\`typescript
 export const QRTIDFrontTemplate = React.forwardRef<
   HTMLDivElement,
   QRTIDFrontProps
 >(({ ... }, ref) => {
   return <div ref={ref}>...</div>
 })
-```
+\`\`\`
 
 **Why Required:**
 - Parent component needs direct DOM access
@@ -752,10 +752,10 @@ export const QRTIDFrontTemplate = React.forwardRef<
 **Issue:** If photo URL is from external server without CORS headers
 
 **Symptom:**
-```
+\`\`\`
 [html2canvas] Failed to load image: ...
 DOMException: Tainted canvas
-```
+\`\`\`
 
 **Workaround:**
 - Use base64 data URLs for photos

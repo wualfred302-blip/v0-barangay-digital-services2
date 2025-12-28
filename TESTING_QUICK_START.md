@@ -60,9 +60,9 @@ Automated implementation checker:
 - Dependency verification
 
 **Run it:**
-```bash
+\`\`\`bash
 node verify-qrt-implementation.js
-```
+\`\`\`
 
 ### 4. Analysis Script (9.1KB)
 **File:** `test-qrt-analysis.js`
@@ -74,9 +74,9 @@ Workflow analysis tool:
 - Success criteria
 
 **Run it:**
-```bash
+\`\`\`bash
 node test-qrt-analysis.js
-```
+\`\`\`
 
 ### 5. Verification Report (5.5KB)
 **File:** `verification-report.json`
@@ -101,14 +101,14 @@ Browser automation script:
 ### Quick Test (5 minutes)
 
 1. **Start your dev server**
-   ```bash
+   \`\`\`bash
    npm run dev
-   ```
+   \`\`\`
 
 2. **Open the payment URL in your browser**
-   ```
+   \`\`\`
    https://9000-firebase-barangayformdemo-1766126387508.cluster-ejd22kqny5dfowoyipt52.cloudworkstations.dev/payment?type=qrt
-   ```
+   \`\`\`
 
 3. **Open Developer Tools**
    - Press F12
@@ -122,7 +122,7 @@ Browser automation script:
 
 6. **Watch the console logs**
    You should see:
-   ```
+   \`\`\`
    [QRT ID Generation] Starting image generation...
    [QRT ID Generation] Photo URL: Present
    [QRT ID Generation] QR Code: Generated
@@ -131,7 +131,7 @@ Browser automation script:
    [html2canvas] Back side SUCCESS on attempt 1
    [QRT ID Generation] SUCCESS - Front image: data:image/png...
    [QRT ID Generation] SUCCESS - Back image: data:image/png...
-   ```
+   \`\`\`
 
 7. **Verify success**
    - Payment receipt modal appears
@@ -159,7 +159,7 @@ Browser automation script:
 ## Expected Console Output
 
 ### Success Case:
-```
+\`\`\`
 [QRT ID Generation] Starting image generation...
 [QRT ID Generation] Photo URL: Present
 [QRT ID Generation] QR Code: Generated
@@ -181,7 +181,7 @@ Browser automation script:
 [html2canvas] Both sides generated successfully
 [QRT ID Generation] SUCCESS - Front image: data:image/png;base64,...
 [QRT ID Generation] SUCCESS - Back image: data:image/png;base64,...
-```
+\`\`\`
 
 ---
 
@@ -273,24 +273,24 @@ All files in: `/home/user/barangayformdemo/`
 ## Quick Commands
 
 ### Verify implementation:
-```bash
+\`\`\`bash
 node verify-qrt-implementation.js
-```
+\`\`\`
 
 ### Analyze workflow:
-```bash
+\`\`\`bash
 node test-qrt-analysis.js
-```
+\`\`\`
 
 ### Read full report:
-```bash
+\`\`\`bash
 cat QRT_PAYMENT_WORKFLOW_TEST_REPORT.md | less
-```
+\`\`\`
 
 ### Check test results:
-```bash
+\`\`\`bash
 cat verification-report.json | jq
-```
+\`\`\`
 
 ---
 

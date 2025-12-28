@@ -9,31 +9,31 @@
 ### Scenario 1: Immediate Continuation (Same Day)
 
 **What to do:**
-```
+\`\`\`
 1. Ask directly: "Continue testing the QRT ID generation fix"
 2. Provide any test results: "I tested it and got error X"
 3. That's it - system usually provides auto-summary
-```
+\`\`\`
 
 **Example message:**
-```
+\`\`\`
 "Continue work on QRT ID generation.
 I tested the system and the images are now generating successfully!"
-```
+\`\`\`
 
 ---
 
 ### Scenario 2: Fresh Start After Restart
 
 **What to do:**
-```
+\`\`\`
 1. Provide the context file reference
 2. Give brief status update
 3. Describe what you want help with
-```
+\`\`\`
 
 **Example message:**
-```
+\`\`\`
 "I restarted Claude. Please check /home/user/barangayformdemo/CONTINUATION_GUIDE.md
 for full context about the QRT ID payment system project.
 
@@ -41,22 +41,22 @@ I tested the image generation and it's still not working.
 Here's the error I got in console: [paste error message]
 
 Can you help me debug this?"
-```
+\`\`\`
 
 ---
 
 ### Scenario 3: Specific Bug or Feature Request
 
 **What to do:**
-```
+\`\`\`
 1. State the problem clearly
 2. Provide error messages or logs
 3. Describe what you've already tried
 4. Ask specific question
-```
+\`\`\`
 
 **Example message:**
-```
+\`\`\`
 "Working on QRT ID payment system. When I submit the payment form,
 I get this error in console:
 [paste full error message]
@@ -66,7 +66,7 @@ I already tried:
 - Restarting dev server
 
 What's the issue and how do I fix it?"
-```
+\`\`\`
 
 ---
 
@@ -74,7 +74,7 @@ What's the issue and how do I fix it?"
 
 Copy and fill in this template:
 
-```
+\`\`\`
 PROJECT: [Project Name]
 CONTEXT FILE: /home/user/barangayformdemo/CONTINUATION_GUIDE.md
 LAST WORK: [Brief description of what was done]
@@ -92,14 +92,14 @@ ERROR/LOGS:
 
 WHAT I NEED:
 [Help debugging, implement feature, etc.]
-```
+\`\`\`
 
 ---
 
 ## 🔍 Information to Include for Best Help
 
 ### If Testing Something
-```
+\`\`\`
 ✅ Include:
 - Steps you took
 - What you expected to happen
@@ -110,10 +110,10 @@ WHAT I NEED:
 ❌ Don't include:
 - Vague descriptions ("it doesn't work")
 - Partial error messages
-```
+\`\`\`
 
 ### If Reporting a Bug
-```
+\`\`\`
 ✅ Include:
 - Exact error message (copy/paste from console)
 - Steps to reproduce the bug
@@ -123,10 +123,10 @@ WHAT I NEED:
 ❌ Don't include:
 - "Something is broken"
 - Made up error messages
-```
+\`\`\`
 
 ### If Requesting a Feature
-```
+\`\`\`
 ✅ Include:
 - Clear description of desired behavior
 - Where this feature should appear
@@ -136,7 +136,7 @@ WHAT I NEED:
 ❌ Don't include:
 - "Make it better"
 - Unclear requirements
-```
+\`\`\`
 
 ---
 
@@ -144,9 +144,9 @@ WHAT I NEED:
 
 When asking for help, I may reference files by location and line number:
 
-```
+\`\`\`
 "The issue is in app/payment/page.tsx around line 502"
-```
+\`\`\`
 
 **To find it quickly:**
 1. Open the file in VS Code
@@ -159,7 +159,7 @@ When asking for help, I may reference files by location and line number:
 ## 🔗 Git Information I Need
 
 If I ask for git info, provide:
-```bash
+\`\`\`bash
 # Check current status
 git status
 
@@ -168,7 +168,7 @@ git diff
 
 # View recent commits
 git log --oneline -10
-```
+\`\`\`
 
 Or just say: "Check my git status - I've made some changes to [file names]"
 
@@ -177,7 +177,7 @@ Or just say: "Check my git status - I've made some changes to [file names]"
 ## 🚀 Starting a New Task
 
 **Best format:**
-```
+\`\`\`
 "I want to [action] on the QRT ID project.
 Here's what I need:
 1. [Requirement 1]
@@ -188,50 +188,50 @@ Current files involved:
 - components/qrt-id-front-template.tsx
 
 Can you help me implement this?"
-```
+\`\`\`
 
 ---
 
 ## 💡 Pro Tips for Quick Answers
 
 ### Tip 1: Reference Documentation File
-```
+\`\`\`
 "According to /home/user/barangayformdemo/CONTINUATION_GUIDE.md,
 the QRT ID generation needs image loading verification.
 Can you check if that's implemented correctly?"
-```
+\`\`\`
 This tells me exactly what context to use.
 
 ### Tip 2: Provide Specific Code Location
-```
+\`\`\`
 "The issue is in app/payment/page.tsx where we call generateQRTIDImages().
 When I add logging there, I see [specific output].
 What does that mean?"
-```
+\`\`\`
 This helps me jump to the exact problem area.
 
 ### Tip 3: Share Console Logs
-```
+\`\`\`
 "Here's what I see in browser console:
 [paste the full console output starting with [QRT ID Generation]]
 
 Is this working as expected?"
-```
+\`\`\`
 Console logs tell me exactly what's happening.
 
 ### Tip 4: Reference the Plan File
-```
+\`\`\`
 "I'm working on Step 4 of the implementation plan
 (/home/user/.claude/plans/glimmering-exploring-metcalfe.md).
 I got stuck on this part: [describe the issue]"
-```
+\`\`\`
 This shows you've reviewed the plan.
 
 ---
 
 ## ❌ What NOT to Do
 
-```
+\`\`\`
 DON'T: "Fix the code" (too vague, I don't know what's broken)
 DO:    "The QRT images aren't generating. Console shows [error]"
 
@@ -243,13 +243,13 @@ DO:    "The payment form should be simpler - remove these fields: [list]"
 
 DON'T: "Check my code for issues" (too broad)
 DO:    "I think the issue is in how we're calling html2canvas. Can you review that?"
-```
+\`\`\`
 
 ---
 
 ## 🎓 Understanding the Project Structure
 
-```
+\`\`\`
 barangayformdemo/
 ├── app/
 │   ├── payment/page.tsx ⚠️ CRITICAL - payment & image generation
@@ -265,7 +265,7 @@ barangayformdemo/
 │   ├── qrt-id-generator.ts ⚠️ CRITICAL - image generation logic
 │   └── payment-utils.ts - validation
 └── CONTINUATION_GUIDE.md ← Reference this file
-```
+\`\`\`
 
 **⚠️ = Most likely to need changes**
 
@@ -274,29 +274,29 @@ barangayformdemo/
 ## 🔧 Common Issues & How to Ask About Them
 
 ### Image Generation Not Working
-```
+\`\`\`
 "The QRT ID images aren't generating. I see these logs in console:
 [paste full console output]
 
 Is it the ref attachment, image loading, or canvas capture that's failing?"
-```
+\`\`\`
 
 ### Payment Flow Broken
-```
+\`\`\`
 "After I complete payment, I'm getting redirected to the wrong page.
 I'm on the [page name] and expect to go to [page name],
 but it goes to [actual page] instead.
 
 Here's the URL: [current URL]"
-```
+\`\`\`
 
 ### Button Not Functional
-```
+\`\`\`
 "The [button name] button isn't working. When I click it:
 - Expected: [what should happen]
 - Actual: [what happens instead]
 - Error shown: [any error messages]"
-```
+\`\`\`
 
 ---
 
@@ -322,7 +322,7 @@ Here's the URL: [current URL]"
 
 Here's the exact format that works best:
 
-```
+\`\`\`
 I'm working on the QRT ID payment system.
 
 STATUS:
@@ -347,7 +347,7 @@ FILES INVOLVED:
 
 WHAT I NEED:
 [Help debugging, implement a fix, review code, etc.]
-```
+\`\`\`
 
 This gives me:
 - ✅ Full context without reading 50 messages
@@ -362,7 +362,7 @@ This gives me:
 
 If something is completely broken:
 
-```
+\`\`\`
 URGENT: [Brief description]
 
 What's broken:
@@ -378,7 +378,7 @@ Impact:
 [Who/what is affected]
 
 PLEASE PRIORITIZE THIS.
-```
+\`\`\`
 
 ---
 
@@ -427,12 +427,12 @@ These files document the project and are always helpful context:
 4. **Share logs:** Copy/paste console output, not descriptions
 
 **Example:**
-```
+\`\`\`
 "I'm testing QRT ID image generation.
 Check CONTINUATION_GUIDE.md for context.
 Images aren't appearing - console shows: [paste error]
 What's wrong?"
-```
+\`\`\`
 
 ---
 
