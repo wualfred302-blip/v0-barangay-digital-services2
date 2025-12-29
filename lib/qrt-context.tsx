@@ -1,15 +1,7 @@
 "use client"
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  memo,
-  ReactNode,
-} from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, memo, type ReactNode } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export interface QRTIDRequest {
   id: string
@@ -61,26 +53,92 @@ interface QRTContextType {
   verificationLogs: QRTVerificationLog[]
   setCurrentRequest: (request: Partial<QRTIDRequest> | null) => void
   setCurrentRequestImmediate: (request: Partial<QRTIDRequest> | null) => void
-  addQRTRequest: (request: QRTIDRequest) => void
-  updateQRTStatus: (
-    id: string,
-    status: string,
-    imageData?: { frontUrl: string; backUrl: string }
-  ) => void
+  addQRTRequest: (request: QRTIDRequest) => Promise<QRTIDRequest | null>
+  updateQRTStatus: (id: string, status: string, imageData?: { frontUrl: string; backUrl: string }) => Promise<void>
   getQRTByCode: (code: string) => QRTIDRequest | undefined
-  findQRTByVerificationCode: (code: string) => QRTIDRequest | undefined
+  findQRTByVerificationCode: (code: string) => Promise<QRTIDRequest | null>
   getUserQRTIds: (userId: string) => QRTIDRequest[]
   getQRTById: (id: string) => QRTIDRequest | undefined
-  logVerification: (qrtCode: string, verificationCode: string, verifiedBy: string) => void
+  logVerification: (qrtCode: string, verificationCode: string, verifiedBy: string) => Promise<void>
   getVerificationLogs: () => QRTVerificationLog[]
   getQRTVerificationHistory: (qrtCode: string) => QRTVerificationLog[]
+  refreshQRTIds: () => Promise<void>
 }
 
 const QRTContext = createContext<QRTContextType | undefined>(undefined)
 
-const STORAGE_KEY = "barangay_qrt_ids"
 const CURRENT_REQUEST_KEY = "barangay_qrt_current_request"
-const VERIFICATION_LOGS_KEY = "barangay_verification_logs"
+
+function dbRowToQRTIDRequest(row: Record<string, unknown>): QRTIDRequest {
+  return {
+    id: row.id as string,
+    qrtCode: row.qrt_code as string,
+    verificationCode: row.verification_code as string,
+    userId: (row.user_id as string) || "anonymous",
+    fullName: row.full_name as string,
+    birthDate: row.birth_date as string,
+    age: row.age as number,
+    gender: row.gender as string,
+    civilStatus: row.civil_status as string,
+    birthPlace: row.birth_place as string,
+    address: row.address as string,
+    height: (row.height as string) || "",
+    weight: (row.weight as string) || "",
+    yearsResident: (row.years_resident as number) || 0,
+    citizenship: (row.citizenship as string) || "",
+    emergencyContactName: (row.emergency_contact_name as string) || "",
+    emergencyContactAddress: (row.emergency_contact_address as string) || "",
+    emergencyContactPhone: (row.emergency_contact_phone as string) || "",
+    emergencyContactRelationship: (row.emergency_contact_relationship as string) || "",
+    photoUrl: (row.photo_url as string) || "",
+    idFrontImageUrl: row.id_front_image_url as string | undefined,
+    idBackImageUrl: row.id_back_image_url as string | undefined,
+    qrCodeData: row.qr_code_data as string,
+    status: row.status as QRTIDRequest["status"],
+    issuedDate: row.issued_date as string | undefined,
+    expiryDate: row.expiry_date as string | undefined,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string | undefined,
+    paymentReference: (row.payment_reference as string) || "",
+    paymentTransactionId: row.payment_transaction_id as string | undefined,
+    requestType: row.request_type as QRTIDRequest["requestType"],
+    amount: Number(row.amount) || 0,
+  }
+}
+
+function qrtRequestToDbRow(request: QRTIDRequest): Record<string, unknown> {
+  return {
+    id: request.id,
+    qrt_code: request.qrtCode,
+    verification_code: request.verificationCode,
+    full_name: request.fullName,
+    birth_date: request.birthDate,
+    age: request.age,
+    gender: request.gender,
+    civil_status: request.civilStatus,
+    birth_place: request.birthPlace,
+    address: request.address,
+    height: request.height,
+    weight: request.weight,
+    years_resident: request.yearsResident,
+    citizenship: request.citizenship,
+    emergency_contact_name: request.emergencyContactName,
+    emergency_contact_address: request.emergencyContactAddress,
+    emergency_contact_phone: request.emergencyContactPhone,
+    emergency_contact_relationship: request.emergencyContactRelationship,
+    photo_url: request.photoUrl,
+    id_front_image_url: request.idFrontImageUrl,
+    id_back_image_url: request.idBackImageUrl,
+    qr_code_data: request.qrCodeData,
+    status: request.status,
+    request_type: request.requestType,
+    issued_date: request.issuedDate,
+    expiry_date: request.expiryDate,
+    payment_reference: request.paymentReference,
+    payment_transaction_id: request.paymentTransactionId,
+    amount: request.amount,
+  }
+}
 
 // Utility function to generate unique verification code
 function generateVerificationCode(existingCodes: string[]): string {
@@ -90,7 +148,9 @@ function generateVerificationCode(existingCodes: string[]): string {
   const maxAttempts = 100
 
   do {
-    const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0')
+    const randomNum = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0")
     code = `VRF-${year}-${randomNum}`
     attempts++
   } while (existingCodes.includes(code) && attempts < maxAttempts)
@@ -104,168 +164,239 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
   const [verificationLogs, setVerificationLogs] = useState<QRTVerificationLog[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
-  // Load from localStorage on mount
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const supabase = createClient()
+
+        // Load QRT IDs from Supabase
+        const { data: qrtData, error: qrtError } = await supabase
+          .from("qrt_ids")
+          .select("*")
+          .order("created_at", { ascending: false })
+
+        let mappedQrtData: QRTIDRequest[] = []
+        if (qrtError) {
+          console.error("Failed to load QRT IDs from Supabase:", qrtError)
+        } else if (qrtData) {
+          mappedQrtData = qrtData.map(dbRowToQRTIDRequest)
+          setQrtIds(mappedQrtData)
+        }
+
+        // Load current request from localStorage (temporary session data)
+        const storedCurrent = localStorage.getItem(CURRENT_REQUEST_KEY)
+        if (storedCurrent) {
+          const parsedCurrent = JSON.parse(storedCurrent)
+          setCurrentRequest(parsedCurrent)
+        }
+
+        const { data: logsData, error: logsError } = await supabase
+          .from("qrt_verification_logs")
+          .select("id, qrt_id, scanned_at, verification_status, notes")
+          .order("scanned_at", { ascending: false })
+          .limit(100)
+
+        if (logsError) {
+          console.error("Failed to load verification logs from Supabase:", logsError)
+        } else if (logsData) {
+          // Map logs and look up QRT data from loaded QRT IDs
+          const mappedLogs: QRTVerificationLog[] = logsData.map((log) => {
+            // Find the corresponding QRT ID from local data
+            const qrtMatch = mappedQrtData.find((qrt) => qrt.id === log.qrt_id)
+            return {
+              qrtCode: qrtMatch?.qrtCode || "",
+              verificationCode: qrtMatch?.verificationCode || "",
+              verifiedBy: "Barangay Staff",
+              timestamp: log.scanned_at,
+              action: "qrt_verification" as const,
+            }
+          })
+          setVerificationLogs(mappedLogs)
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error)
+      } finally {
+        setIsLoaded(true)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const refreshQRTIds = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        setQrtIds(parsed)
-      }
+      const supabase = createClient()
+      const { data, error } = await supabase.from("qrt_ids").select("*").order("created_at", { ascending: false })
 
-      const storedCurrent = localStorage.getItem(CURRENT_REQUEST_KEY)
-      if (storedCurrent) {
-        const parsedCurrent = JSON.parse(storedCurrent)
-        setCurrentRequest(parsedCurrent)
-      }
-
-      const storedLogs = localStorage.getItem(VERIFICATION_LOGS_KEY)
-      if (storedLogs) {
-        const parsedLogs = JSON.parse(storedLogs)
-        setVerificationLogs(parsedLogs)
+      if (error) {
+        console.error("Failed to refresh QRT IDs:", error)
+      } else if (data) {
+        const mappedData = data.map(dbRowToQRTIDRequest)
+        setQrtIds(mappedData)
       }
     } catch (error) {
-      console.error("Failed to load QRT IDs from localStorage:", error)
-      localStorage.removeItem(STORAGE_KEY)
-      localStorage.removeItem(CURRENT_REQUEST_KEY)
-      localStorage.removeItem(VERIFICATION_LOGS_KEY)
-    } finally {
-      setIsLoaded(true)
+      console.error("Failed to refresh QRT IDs:", error)
     }
   }, [])
 
-  // Save to localStorage with debounce (1 second)
-  useEffect(() => {
-    if (!isLoaded) return
+  const addQRTRequest = useCallback(async (request: QRTIDRequest): Promise<QRTIDRequest | null> => {
+    try {
+      const supabase = createClient()
+      const dbRow = qrtRequestToDbRow(request)
 
-    const timeoutId = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(qrtIds))
-      } catch (error) {
-        console.error("Failed to save QRT IDs to localStorage:", error)
+      const { data, error } = await supabase.from("qrt_ids").insert(dbRow).select().single()
+
+      if (error) {
+        console.error("Failed to add QRT request to Supabase:", error)
+        return null
       }
-    }, 1000)
 
-    return () => clearTimeout(timeoutId)
-  }, [qrtIds, isLoaded])
-
-  // Save current request to localStorage with debounce
-  useEffect(() => {
-    if (!isLoaded) return
-
-    const timeoutId = setTimeout(() => {
-      try {
-        if (currentRequest) {
-          localStorage.setItem(CURRENT_REQUEST_KEY, JSON.stringify(currentRequest))
-        } else {
-          localStorage.removeItem(CURRENT_REQUEST_KEY)
-        }
-      } catch (error) {
-        console.error("Failed to save current request to localStorage:", error)
-      }
-    }, 1000)
-
-    return () => clearTimeout(timeoutId)
-  }, [currentRequest, isLoaded])
-
-  // Save verification logs to localStorage with debounce
-  useEffect(() => {
-    if (!isLoaded) return
-
-    const timeoutId = setTimeout(() => {
-      try {
-        localStorage.setItem(VERIFICATION_LOGS_KEY, JSON.stringify(verificationLogs))
-      } catch (error) {
-        console.error("Failed to save verification logs to localStorage:", error)
-      }
-    }, 1000)
-
-    return () => clearTimeout(timeoutId)
-  }, [verificationLogs, isLoaded])
-
-  const addQRTRequest = useCallback((request: QRTIDRequest) => {
-    setQrtIds((prev) => [request, ...prev])
+      const newRequest = dbRowToQRTIDRequest(data)
+      setQrtIds((prev) => [newRequest, ...prev])
+      return newRequest
+    } catch (error) {
+      console.error("Failed to add QRT request:", error)
+      return null
+    }
   }, [])
 
   const updateQRTStatus = useCallback(
-    (
-      id: string,
-      status: string,
-      imageData?: { frontUrl: string; backUrl: string }
-    ) => {
-      setQrtIds((prev) =>
-        prev.map((qrt) => {
-          if (qrt.id === id) {
-            return {
-              ...qrt,
-              status: status as QRTIDRequest["status"],
-              updatedAt: new Date().toISOString(),
-              ...(imageData && {
-                idFrontImageUrl: imageData.frontUrl,
-                idBackImageUrl: imageData.backUrl,
-              }),
+    async (id: string, status: string, imageData?: { frontUrl: string; backUrl: string }) => {
+      try {
+        const supabase = createClient()
+
+        const updateData: Record<string, unknown> = {
+          status,
+          updated_at: new Date().toISOString(),
+        }
+
+        if (imageData) {
+          updateData.id_front_image_url = imageData.frontUrl
+          updateData.id_back_image_url = imageData.backUrl
+        }
+
+        const { error } = await supabase.from("qrt_ids").update(updateData).eq("id", id)
+
+        if (error) {
+          console.error("Failed to update QRT status in Supabase:", error)
+          return
+        }
+
+        // Update local state
+        setQrtIds((prev) =>
+          prev.map((qrt) => {
+            if (qrt.id === id) {
+              return {
+                ...qrt,
+                status: status as QRTIDRequest["status"],
+                updatedAt: new Date().toISOString(),
+                ...(imageData && {
+                  idFrontImageUrl: imageData.frontUrl,
+                  idBackImageUrl: imageData.backUrl,
+                }),
+              }
             }
-          }
-          return qrt
-        })
-      )
+            return qrt
+          }),
+        )
+      } catch (error) {
+        console.error("Failed to update QRT status:", error)
+      }
     },
-    []
+    [],
   )
 
   const getQRTByCode = useCallback(
     (code: string) => {
       return qrtIds.find((qrt) => qrt.qrtCode === code)
     },
-    [qrtIds]
+    [qrtIds],
   )
 
   const getUserQRTIds = useCallback(
     (userId: string) => {
       return qrtIds.filter((qrt) => qrt.userId === userId)
     },
-    [qrtIds]
+    [qrtIds],
   )
 
   const getQRTById = useCallback(
     (id: string) => {
       return qrtIds.find((qrt) => qrt.id === id)
     },
-    [qrtIds]
+    [qrtIds],
   )
 
   const findQRTByVerificationCode = useCallback(
-    (code: string) => {
-      return qrtIds.find((qrt) => qrt.verificationCode === code)
-    },
-    [qrtIds]
-  )
+    async (code: string): Promise<QRTIDRequest | null> => {
+      // First check local state
+      const localMatch = qrtIds.find((qrt) => qrt.verificationCode === code)
+      if (localMatch) return localMatch
 
-  const logVerification = useCallback(
-    (qrtCode: string, verificationCode: string, verifiedBy: string) => {
-      const newLog: QRTVerificationLog = {
-        qrtCode,
-        verificationCode,
-        verifiedBy,
-        timestamp: new Date().toISOString(),
-        action: "qrt_verification",
+      // If not found locally, query Supabase directly
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.from("qrt_ids").select("*").eq("verification_code", code).single()
+
+        if (error) {
+          console.error("Failed to find QRT by verification code:", error)
+          return null
+        }
+
+        if (data) {
+          const qrt = dbRowToQRTIDRequest(data)
+          // Add to local state if not present
+          setQrtIds((prev) => {
+            if (!prev.find((q) => q.id === qrt.id)) {
+              return [qrt, ...prev]
+            }
+            return prev
+          })
+          return qrt
+        }
+        return null
+      } catch (error) {
+        console.error("Failed to find QRT by verification code:", error)
+        return null
       }
-
-      setVerificationLogs((prev) => [newLog, ...prev])
-
-      // Also call API endpoint for server-side logging (fire-and-forget)
-      fetch('/api/qrt-id/verify/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newLog),
-      }).catch((error) => {
-        console.error('[Verification Log] Failed to log to API:', error)
-      })
-
-      console.log('[Verification Log] Saved to localStorage:', newLog)
     },
-    []
+    [qrtIds],
   )
+
+  const logVerification = useCallback(async (qrtCode: string, verificationCode: string, verifiedBy: string) => {
+    const newLog: QRTVerificationLog = {
+      qrtCode,
+      verificationCode,
+      verifiedBy,
+      timestamp: new Date().toISOString(),
+      action: "qrt_verification",
+    }
+
+    // Update local state immediately
+    setVerificationLogs((prev) => [newLog, ...prev])
+
+    // Save to Supabase
+    try {
+      const supabase = createClient()
+
+      // Find the QRT ID to get its UUID
+      const { data: qrtData } = await supabase.from("qrt_ids").select("id").eq("qrt_code", qrtCode).single()
+
+      if (qrtData?.id) {
+        const { error } = await supabase.from("qrt_verification_logs").insert({
+          qrt_id: qrtData.id,
+          verification_status: "success",
+          notes: `Verified by ${verifiedBy}. Code: ${verificationCode}`,
+        })
+
+        if (error) {
+          console.error("Failed to log verification to Supabase:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to log verification:", error)
+    }
+  }, [])
 
   const getVerificationLogs = useCallback(() => {
     return verificationLogs
@@ -275,7 +406,7 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
     (qrtCode: string) => {
       return verificationLogs.filter((log) => log.qrtCode === qrtCode)
     },
-    [verificationLogs]
+    [verificationLogs],
   )
 
   const setCurrentRequestImmediate = useCallback((request: Partial<QRTIDRequest> | null) => {
@@ -308,6 +439,7 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
       logVerification,
       getVerificationLogs,
       getQRTVerificationHistory,
+      refreshQRTIds,
     }),
     [
       qrtIds,
@@ -324,7 +456,8 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
       getVerificationLogs,
       getQRTVerificationHistory,
       setCurrentRequestImmediate,
-    ]
+      refreshQRTIds,
+    ],
   )
 
   return <QRTContext.Provider value={value}>{children}</QRTContext.Provider>

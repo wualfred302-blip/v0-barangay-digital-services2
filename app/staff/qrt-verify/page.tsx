@@ -2,32 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
-  ArrowLeft, 
-  ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
   AlertTriangle,
   User,
-  MapPin,
   Phone,
   Printer,
   History,
   Scan,
   RefreshCw,
   Search,
-  Calendar,
-  MoreHorizontal
 } from "lucide-react"
 import { LiveQRScanner } from "@/components/live-qr-scanner"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { slideUp, fadeIn, staggerContainer, scaleIn } from "@/lib/animations"
+import { slideUp, staggerContainer, scaleIn } from "@/lib/animations"
 import { cn } from "@/lib/utils"
 import { useQRT } from "@/lib/qrt-context"
 
@@ -57,10 +53,10 @@ export default function QRTVerifyPage() {
   if (isLoading || !isStaffAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
-        <motion.div 
+        <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-10 w-10 rounded-full border-4 border-emerald-500 border-t-transparent" 
+          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+          className="h-10 w-10 rounded-full border-4 border-emerald-500 border-t-transparent"
         />
       </div>
     )
@@ -73,10 +69,10 @@ export default function QRTVerifyPage() {
     setIsScanning(false)
 
     // Simulate high-end verification animation delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    // Try to find QRT by verificationCode or qrtCode
-    let qrt = findQRTByVerificationCode(code)
+    // Try to find QRT by verificationCode or qrtCode (now async for Supabase)
+    let qrt = await findQRTByVerificationCode(code)
     if (!qrt) {
       qrt = getQRTByCode(code)
     }
@@ -102,23 +98,23 @@ export default function QRTVerifyPage() {
         status: isExpired ? "expired" : qrt.status,
         issueDate: qrt.issuedDate,
         expiryDate: qrt.expiryDate,
-        photo: qrt.photoUrl
+        photo: qrt.photoUrl,
       }
 
       result = {
         status: isExpired ? "expired" : "valid",
         qrtData: qrtData,
-        verifiedAt: new Date().toISOString()
+        verifiedAt: new Date().toISOString(),
       }
 
-      // Log the verification
-      logVerification(qrt.qrtCode, qrt.verificationCode, staffUser?.fullName || "Staff")
+      // Log the verification (now async for Supabase)
+      await logVerification(qrt.qrtCode, qrt.verificationCode, staffUser?.fullName || "Staff")
     } else {
       result = { status: "invalid" }
     }
 
     setVerificationResult(result)
-    setRecentVerifications(prev => [result, ...prev].slice(0, 5))
+    setRecentVerifications((prev) => [result, ...prev].slice(0, 5))
     setIsVerifying(false)
   }
 
@@ -159,7 +155,7 @@ export default function QRTVerifyPage() {
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Premium Header */}
       <header className="sticky top-0 z-30 flex h-16 items-center bg-white/80 backdrop-blur-xl px-4 border-b border-gray-100">
-        <button 
+        <button
           onClick={() => router.back()}
           className="mr-4 h-10 w-10 flex items-center justify-center rounded-xl hover:bg-gray-50 transition-colors"
         >
@@ -170,8 +166,8 @@ export default function QRTVerifyPage() {
           <p className="text-lg font-black text-gray-900">ID Verification</p>
         </div>
         <div className="flex items-center gap-2">
-           <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Secure</span>
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Secure</span>
         </div>
       </header>
 
@@ -186,9 +182,9 @@ export default function QRTVerifyPage() {
               className="flex flex-col items-center justify-center py-20 text-center"
             >
               <div className="relative h-24 w-24 mb-8">
-                <motion.div 
+                <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                   className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500"
                 />
                 <div className="absolute inset-4 flex items-center justify-center">
@@ -208,11 +204,16 @@ export default function QRTVerifyPage() {
             >
               {/* Status Banner */}
               <motion.div variants={slideUp}>
-                <Card className={cn(
-                  "overflow-hidden border-0 shadow-lg transition-colors duration-500",
-                  verificationResult.status === "valid" ? "bg-emerald-500" :
-                  verificationResult.status === "expired" ? "bg-amber-500" : "bg-red-500"
-                )}>
+                <Card
+                  className={cn(
+                    "overflow-hidden border-0 shadow-lg transition-colors duration-500",
+                    verificationResult.status === "valid"
+                      ? "bg-emerald-500"
+                      : verificationResult.status === "expired"
+                        ? "bg-amber-500"
+                        : "bg-red-500",
+                  )}
+                >
                   <CardContent className="p-8 text-center text-white">
                     <motion.div variants={scaleIn}>
                       {verificationResult.status === "valid" ? (
@@ -229,12 +230,15 @@ export default function QRTVerifyPage() {
                         </div>
                       )}
                     </motion.div>
-                    
+
                     <h2 className="mt-6 text-3xl font-black tracking-tight">
-                      {verificationResult.status === "valid" ? "VERIFIED VALID" :
-                       verificationResult.status === "expired" ? "ID EXPIRED" : "INVALID ID"}
+                      {verificationResult.status === "valid"
+                        ? "VERIFIED VALID"
+                        : verificationResult.status === "expired"
+                          ? "ID EXPIRED"
+                          : "INVALID ID"}
                     </h2>
-                    
+
                     {verificationResult.qrtData && (
                       <p className="mt-2 text-sm font-bold opacity-80 tracking-widest uppercase">
                         {verificationResult.qrtData.qrtCode}
@@ -251,10 +255,10 @@ export default function QRTVerifyPage() {
                     <CardContent className="p-0">
                       <div className="p-6 border-b border-gray-50 flex items-center gap-5">
                         <div className="relative h-20 w-20 overflow-hidden rounded-2xl border-4 border-gray-50 ring-1 ring-gray-100 shadow-sm">
-                          <Image 
-                            src={verificationResult.qrtData.photo} 
-                            alt="Resident" 
-                            fill 
+                          <Image
+                            src={verificationResult.qrtData.photo || "/placeholder.svg"}
+                            alt="Resident"
+                            fill
                             className="object-cover"
                           />
                         </div>
@@ -267,7 +271,8 @@ export default function QRTVerifyPage() {
                               Resident
                             </span>
                             <span className="text-[10px] font-bold text-gray-400">
-                              {calculateAge(verificationResult.qrtData.birthDate)}Y • {verificationResult.qrtData.gender}
+                              {calculateAge(verificationResult.qrtData.birthDate)}Y •{" "}
+                              {verificationResult.qrtData.gender}
                             </span>
                           </div>
                         </div>
@@ -275,31 +280,47 @@ export default function QRTVerifyPage() {
 
                       <div className="p-6 grid grid-cols-2 gap-y-6 gap-x-4">
                         <div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Civil Status</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">
+                            Civil Status
+                          </p>
                           <p className="text-sm font-bold text-gray-900">{verificationResult.qrtData.civilStatus}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Residency</p>
-                          <p className="text-sm font-bold text-gray-900">{verificationResult.qrtData.yearsResident} Years</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">
+                            Residency
+                          </p>
+                          <p className="text-sm font-bold text-gray-900">
+                            {verificationResult.qrtData.yearsResident} Years
+                          </p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Registered Address</p>
-                          <p className="text-sm font-bold text-gray-900 leading-relaxed">{verificationResult.qrtData.address}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">
+                            Registered Address
+                          </p>
+                          <p className="text-sm font-bold text-gray-900 leading-relaxed">
+                            {verificationResult.qrtData.address}
+                          </p>
                         </div>
                         <div className="col-span-2 p-4 rounded-2xl bg-gray-50/50 border border-gray-100">
                           <div className="flex items-center justify-between mb-3">
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Emergency Contact</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+                              Emergency Contact
+                            </p>
                             <Phone className="h-3 w-3 text-emerald-500" />
                           </div>
                           <p className="text-sm font-bold text-gray-900">{verificationResult.qrtData.contactName}</p>
-                          <p className="text-[10px] font-medium text-gray-500 mb-2">{verificationResult.qrtData.contactRelation}</p>
-                          <p className="text-sm font-black text-emerald-600">{verificationResult.qrtData.contactPhone}</p>
+                          <p className="text-[10px] font-medium text-gray-500 mb-2">
+                            {verificationResult.qrtData.contactRelation}
+                          </p>
+                          <p className="text-sm font-black text-emerald-600">
+                            {verificationResult.qrtData.contactPhone}
+                          </p>
                         </div>
                       </div>
 
                       <div className="p-4 bg-gray-50/50 flex gap-3">
-                        <Button 
-                          className="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold shadow-lg shadow-emerald-200" 
+                        <Button
+                          className="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold shadow-lg shadow-emerald-200"
                           onClick={resetVerification}
                         >
                           <Scan className="mr-2 h-5 w-5" />
@@ -313,11 +334,11 @@ export default function QRTVerifyPage() {
                   </Card>
                 </motion.div>
               )}
-              
+
               {!verificationResult.qrtData && (
                 <motion.div variants={slideUp}>
-                  <Button 
-                    className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 font-bold shadow-lg shadow-red-200" 
+                  <Button
+                    className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 font-bold shadow-lg shadow-red-200"
                     onClick={resetVerification}
                   >
                     <RefreshCw className="mr-2 h-5 w-5" />
@@ -336,24 +357,21 @@ export default function QRTVerifyPage() {
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-[32px] blur opacity-20 group-hover:opacity-30 transition-all duration-500" />
                 <div className="relative">
-                  <LiveQRScanner
-                    onScan={handleQRScan}
-                    onError={(err) => console.error(err)}
-                  />
+                  <LiveQRScanner onScan={handleQRScan} onError={(err) => console.error(err)} />
                 </div>
               </div>
 
               {/* Tips Section */}
               <div className="p-6 rounded-[32px] bg-white shadow-sm border border-gray-100 flex gap-4">
-                 <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
-                    <Search className="h-6 w-6 text-emerald-600" />
-                 </div>
-                 <div>
-                    <h4 className="font-black text-gray-900 text-sm">Scanner Protocol</h4>
-                    <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
-                      Ensure the QR code is centered and well-lit for optimal verification speed.
-                    </p>
-                 </div>
+                <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <Search className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <h4 className="font-black text-gray-900 text-sm">Scanner Protocol</h4>
+                  <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
+                    Ensure the QR code is centered and well-lit for optimal verification speed.
+                  </p>
+                </div>
               </div>
 
               {/* Recent Activity */}
@@ -365,7 +383,7 @@ export default function QRTVerifyPage() {
                   </div>
                   <div className="space-y-2">
                     {recentVerifications.map((result, i) => (
-                      <motion.div 
+                      <motion.div
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -374,29 +392,42 @@ export default function QRTVerifyPage() {
                         <Card className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer rounded-2xl bg-white overflow-hidden">
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                               <div className={cn(
-                                 "h-10 w-10 rounded-xl flex items-center justify-center",
-                                 result.status === 'valid' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                               )}>
-                                 <User className="h-5 w-5" />
-                               </div>
-                               <div>
-                                 <p className="text-sm font-black text-gray-900 leading-none mb-1">
-                                   {result.qrtData?.fullName || "Unrecognized ID"}
-                                 </p>
-                                 <p className="text-[10px] font-bold text-gray-400 tracking-widest">
-                                   {result.qrtData?.qrtCode || "FAILED_SCAN"}
-                                 </p>
-                               </div>
+                              <div
+                                className={cn(
+                                  "h-10 w-10 rounded-xl flex items-center justify-center",
+                                  result.status === "valid"
+                                    ? "bg-emerald-50 text-emerald-600"
+                                    : "bg-red-50 text-red-600",
+                                )}
+                              >
+                                <User className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-black text-gray-900 leading-none mb-1">
+                                  {result.qrtData?.fullName || "Unrecognized ID"}
+                                </p>
+                                <p className="text-[10px] font-bold text-gray-400 tracking-widest">
+                                  {result.qrtData?.qrtCode || "FAILED_SCAN"}
+                                </p>
+                              </div>
                             </div>
                             <div className="text-right">
-                               <QRTStatusBadge 
-                                 status={result.status === 'valid' ? 'issued' : result.status === 'expired' ? 'expired' : 'rejected'} 
-                                 size="sm" 
-                               />
-                               <p className="text-[9px] font-bold text-gray-300 mt-1 uppercase">
-                                 {new Date(result.verifiedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                               </p>
+                              <QRTStatusBadge
+                                status={
+                                  result.status === "valid"
+                                    ? "issued"
+                                    : result.status === "expired"
+                                      ? "expired"
+                                      : "rejected"
+                                }
+                                size="sm"
+                              />
+                              <p className="text-[9px] font-bold text-gray-300 mt-1 uppercase">
+                                {new Date(result.verifiedAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
                             </div>
                           </CardContent>
                         </Card>
