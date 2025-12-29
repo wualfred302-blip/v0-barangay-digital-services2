@@ -1,8 +1,8 @@
 # QRT ID Payment & Card Generation - Continuation Guide
 
 **Last Updated:** 2025-12-29
-**Current Status:** Konva.js implementation complete - html2canvas files removed
-**Model Used:** Claude Sonnet 4.5
+**Current Status:** Canvas API implementation active - Konva.js removed for v0 compatibility
+**Model Used:** Claude Opus 4.5
 
 ---
 
@@ -12,20 +12,22 @@
 1. **Payment Flow Bug Fixes** - Fixed redirect loops and context leaks with URL parameters and state flags
 2. **Share/Print/Download Buttons** - Implemented Web Share API, print window, and image download functionality
 3. **Payment Form Simplification** - Removed mobile number/PIN inputs, auto-submit with demo data
-4. **Konva.js Migration for QRT ID Card Generation** - Replaced html2canvas with direct canvas rendering
-   - Created `components/qrt-id-front-konva.tsx` using react-konva
-   - Created `components/qrt-id-back-konva.tsx` using react-konva
-   - Created `lib/qrt-id-generator-konva.ts` with stage.toDataURL() export
-   - Added dependencies: konva 10.0.12, react-konva 19.2.1, use-image 1.1.4
-   - Eliminated html2canvas visibility issues with direct canvas rendering
-   - Set pixelRatio: 2 for high-resolution exports
+4. **Canvas API Implementation** - Native browser Canvas 2D API for ID card generation
+   - `lib/qrt-id-generator-canvas.ts` - Direct canvas rendering (v0 compatible)
+   - No external dependencies - uses standard browser APIs
+   - Works in v0 sandbox environment
+5. **Konva.js Removal (2025-12-29)** - Removed for v0 sandbox compatibility
+   - Deleted `components/qrt-id-front-konva.tsx`
+   - Deleted `components/qrt-id-back-konva.tsx`
+   - Deleted `lib/qrt-id-generator-konva.ts`
+   - Uninstalled: konva, react-konva, use-image packages
 
 ### ⏳ Pending
-- **User Testing:** Verify Konva.js rendering produces correct QRT ID card images
-  - Open browser console to check for `[Konva ID Generation]` logs
+- **User Testing:** Verify Canvas API rendering produces correct QRT ID card images
+  - Open browser console to check for `[v0] Canvas Generator` logs
   - Verify images appear on `/app/qrt-id/[id]` page
   - Test share, print, and download functionality
-  - Compare quality/rendering accuracy with previous implementation
+  - Test in v0 production environment
 
 ### 🔧 Build Status
 - **Last Build:** SUCCESS (2025-12-28)
@@ -322,16 +324,17 @@ npm run format
 ## Key Dependencies & Versions
 
 - **Next.js 14+** - App Router with useSearchParams
-- **konva 10.0.12** - Direct canvas rendering library
-- **react-konva 19.2.1** - React bindings for Konva
-- **use-image 1.1.4** - Image loading hook for react-konva
+- **Native Canvas API** - Browser's built-in Canvas 2D context (no external library)
 - **qrcode** - QR code generation
 - **lucide-react** - UI icons
 - **@shadcn/ui** - UI components
 - **Tailwind CSS** - Styling
 
-**Deprecated (legacy):**
-- **html2canvas** - No longer used, replaced by Konva.js
+**Removed (2025-12-29):**
+- **konva** - Removed for v0 sandbox compatibility
+- **react-konva** - Removed for v0 sandbox compatibility
+- **use-image** - Removed (was Konva dependency)
+- **html2canvas** - Removed earlier, replaced by Canvas API
 
 ---
 
@@ -417,7 +420,7 @@ This contains the detailed 6-step implementation plan with all technical decisio
 
 ---
 
-**Document Version:** 2.1 (html2canvas Cleanup Complete)
+**Document Version:** 3.0 (Konva.js removed, Canvas API only)
 **Last Updated:** 2025-12-29
-**Last Updated By:** Claude Sonnet 4.5
+**Last Updated By:** Claude Opus 4.5
 **For Questions:** Provide error logs with timestamps and steps to reproduce
