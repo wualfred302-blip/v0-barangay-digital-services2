@@ -1,33 +1,41 @@
 "use client"
 
-import { useState, useEffect, useRef, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, FileText, ShieldCheck, Loader2 } from "lucide-react"
 import { useCertificates, type CertificateRequest } from "@/lib/certificate-context"
-import { useQRT, generateVerificationCode } from "@/lib/qrt-context"
+import { useQRT } from "@/lib/qrt-context"
 import { usePayment } from "@/lib/payment-context"
-import { processPayment, validatePaymentMethod, PaymentTransaction } from "@/lib/payment-utils"
+import { processPayment, validatePaymentMethod, type PaymentTransaction } from "@/lib/payment-utils"
 import { GCashForm, MayaForm, BankTransferForm } from "@/components/payment-methods"
 import { PaymentReceiptModal } from "@/components/payment-receipt-modal"
+import { generateQRTIDImages } from "@/lib/qrt-id-generator-canvas"
 import QRCode from "qrcode"
-import { QRTIDFrontKonva } from "@/components/qrt-id-front-konva"
-import { QRTIDBackKonva } from "@/components/qrt-id-back-konva"
-import { generateQRTIDImagesKonva } from "@/lib/qrt-id-generator-konva"
-import Konva from "konva"
 
-// Wrapper component to handle Suspense for useSearchParams
+// Function to generate verification code
+function generateVerificationCode(existingCodes: string[]): string {
+  const code = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, "0")
+  if (existingCodes.includes(code)) {
+    return generateVerificationCode(existingCodes)
+  }
+  return code
+}
+
 export default function PaymentPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
+        </div>
+      }
+    >
       <PaymentPageContent />
     </Suspense>
   )
@@ -37,7 +45,12 @@ function PaymentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { currentRequest, addCertificate, setCurrentRequest } = useCertificates()
-  const { currentRequest: qrtRequest, setCurrentRequest: setQrtRequest, addQRTRequest, isLoaded: qrtContextLoaded } = useQRT()
+  const {
+    currentRequest: qrtRequest,
+    setCurrentRequest: setQrtRequest,
+    addQRTRequest,
+    isLoaded: qrtContextLoaded,
+  } = useQRT()
   const { addPayment } = usePayment()
 
   const [isProcessing, setIsProcessing] = useState(false)
@@ -52,29 +65,13 @@ function PaymentPageContent() {
   // Get payment type from URL parameter - this is the source of truth for the flow type
   const paymentType = searchParams.get("type") // "qrt" or "certificate" or null
 
-  // State for computed template data (needed for image generation)
-  const [templateData, setTemplateData] = useState<{
-    qrtCode: string
-    verificationCode: string
-    qrCodeDataUrl: string
-    issuedDate: string
-    expiryDate: string
-  } | null>(null)
-
-  const frontRef = useRef<Konva.Stage>(null)
-  const backRef = useRef<Konva.Stage>(null)
-
   // Wait for QRT context to load before checking if we should redirect
-  // IMPORTANT: Don't redirect if payment was completed (contexts are intentionally cleared)
-  // IMPORTANT: Use URL parameter to determine correct redirect target
   useEffect(() => {
     if (paymentCompleted || showReceipt) {
-      // Don't redirect after payment is complete
       return
     }
 
     if (qrtContextLoaded && !currentRequest && !qrtRequest) {
-      // Redirect to the appropriate page based on payment type URL parameter
       if (paymentType === "qrt") {
         router.push("/qrt-id/request")
       } else {
@@ -99,8 +96,7 @@ function PaymentPageContent() {
   const isQRTPayment = paymentType === "qrt" || !!qrtRequest
 
   // Calculate total with processing fee
-  // Use optional chaining since contexts may be null after payment completion
-  const fee = isQRTPayment ? (qrtRequest?.amount || 100) : (currentRequest?.amount || 50)
+  const fee = isQRTPayment ? qrtRequest?.amount || 100 : currentRequest?.amount || 50
   const certFee = fee
   const processingFee = 5
   const totalAmount = certFee + processingFee
@@ -131,7 +127,9 @@ function PaymentPageContent() {
     }, 800)
 
     try {
-      const requestId = isQRTPayment ? (qrtRequest.id || `temp-${Date.now()}`) : (currentRequest?.id || `temp-${Date.now()}`)
+      const requestId = isQRTPayment
+        ? qrtRequest?.id || `temp-${Date.now()}`
+        : currentRequest?.id || `temp-${Date.now()}`
       const transaction = await processPayment(method, totalAmount, requestId)
 
       clearInterval(interval)
@@ -140,7 +138,7 @@ function PaymentPageContent() {
       addPayment(transaction)
       setLastTransaction(transaction)
 
-      if (isQRTPayment) {
+      if (isQRTPayment && qrtRequest) {
         // QRT ID GENERATION FLOW
         setProcessingMessage("Generating QRT ID...")
 
@@ -150,12 +148,12 @@ function PaymentPageContent() {
         const qrtCode = `QRT-${year}-${sequentialNumber}`
 
         // 2. Generate Verification Code
-        const existingCodes = [] // In production, this would be fetched from context
+        const existingCodes: string[] = []
         const verificationCode = generateVerificationCode(existingCodes)
-        console.log(`[Verification Code] Generated: ${verificationCode}`)
+        console.log(`[v0] Verification Code Generated: ${verificationCode}`)
 
         // 3. Generate QR Code Data URL with only verification code (security enhancement)
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
         const qrData = {
           verificationCode,
           verifyUrl: `${baseUrl}/api/qrt-id/verify/${verificationCode}`,
@@ -179,54 +177,42 @@ function PaymentPageContent() {
           year: "numeric",
         })
 
-        // 5. Set template data and wait for re-render before capturing images
-        setTemplateData({
-          qrtCode,
-          verificationCode,
-          qrCodeDataUrl,
-          issuedDate: issuedDateFormatted,
-          expiryDate: expiryDateFormatted,
-        })
-
-        // 6. Generate ID Card Images with Konva
-        let frontImageUrl = ""
-        let backImageUrl = ""
-
-        console.log("[QRT ID Generation - Konva] Starting image generation...")
-        console.log("[QRT ID Generation - Konva] Photo URL:", qrtRequest?.photoUrl ? "Present" : "MISSING")
-        console.log("[QRT ID Generation - Konva] QR Code:", qrCodeDataUrl ? "Generated" : "MISSING")
-        console.log("[QRT ID Generation - Konva] Front Ref:", frontRef.current ? "Ready" : "NOT FOUND")
-        console.log("[QRT ID Generation - Konva] Back Ref:", backRef.current ? "Ready" : "NOT FOUND")
+        setProcessingMessage("Generating ID card images...")
+        let idFrontImageUrl = ""
+        let idBackImageUrl = ""
 
         try {
-          // Wait for React to re-render Konva stages with new data
-          await new Promise((resolve) => {
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setTimeout(resolve, 500) // Wait for Konva stages to render and images to load
-              })
-            })
+          const idImages = await generateQRTIDImages({
+            qrtCode,
+            verificationCode,
+            fullName: qrtRequest.fullName || "",
+            birthDate: qrtRequest.birthDate || "",
+            address: qrtRequest.address || "",
+            gender: qrtRequest.gender || "",
+            civilStatus: qrtRequest.civilStatus || "",
+            birthPlace: qrtRequest.birthPlace || "",
+            photoUrl: qrtRequest.photoUrl || "",
+            issuedDate: issuedDateFormatted,
+            expiryDate: expiryDateFormatted,
+            emergencyContactName: qrtRequest.emergencyContactName || "",
+            emergencyContactPhone: qrtRequest.emergencyContactPhone || "",
+            emergencyContactRelationship: qrtRequest.emergencyContactRelationship || "",
+            emergencyContactAddress: qrtRequest.emergencyContactAddress || "",
+            qrCodeData: qrCodeDataUrl,
           })
 
-          console.log("[QRT ID Generation - Konva] Calling generateQRTIDImagesKonva...")
-
-          const result = await generateQRTIDImagesKonva(frontRef.current, backRef.current)
-          console.log("[QRT ID Generation - Konva] Generation result:", result)
-
-          if (result.success) {
-            frontImageUrl = result.frontImageUrl || ""
-            backImageUrl = result.backImageUrl || ""
-            console.log("[QRT ID Generation - Konva] SUCCESS - Front image:", frontImageUrl ? `${frontImageUrl.substring(0, 50)}...` : "EMPTY")
-            console.log("[QRT ID Generation - Konva] SUCCESS - Back image:", backImageUrl ? `${backImageUrl.substring(0, 50)}...` : "EMPTY")
+          if (idImages.success) {
+            idFrontImageUrl = idImages.frontImageUrl || ""
+            idBackImageUrl = idImages.backImageUrl || ""
+            console.log("[v0] ID images generated successfully")
           } else {
-            console.error("[QRT ID Generation - Konva] FAILED:", result.error)
+            console.error("[v0] Failed to generate ID images:", idImages.error)
           }
         } catch (imgError) {
-          console.error("[QRT ID Generation - Konva] EXCEPTION:", imgError)
-          // Continue without images - they can be generated later
+          console.error("[v0] Error generating ID images:", imgError)
         }
 
-        // 7. Create Complete QRT Record
+        // 5. Create Complete QRT Record
         const qrtId = `qrt_${Date.now()}`
         const newQRTRecord = {
           id: qrtId,
@@ -250,8 +236,8 @@ function PaymentPageContent() {
           emergencyContactRelationship: qrtRequest.emergencyContactRelationship || "",
           photoUrl: qrtRequest.photoUrl || "",
           qrCodeData: qrCodeDataUrl,
-          idFrontImageUrl: frontImageUrl,
-          idBackImageUrl: backImageUrl,
+          idFrontImageUrl, // Now populated with generated image
+          idBackImageUrl, // Now populated with generated image
           status: "ready" as const,
           issuedDate,
           expiryDate: expiryDateISO,
@@ -262,17 +248,15 @@ function PaymentPageContent() {
           amount: qrtRequest.amount || 100,
         }
 
-        // 7. Save to Context
+        // 6. Save to Context
         addQRTRequest(newQRTRecord)
 
         // IMPORTANT: Set paymentCompleted BEFORE clearing context to prevent redirect
         setPaymentCompleted(true)
         setQrtRequest(null)
-        setTemplateData(null)
 
         setIsProcessing(false)
         setShowReceipt(true)
-
       } else {
         // CERTIFICATE GENERATION FLOW (existing)
         const serial = `BGRY-MWQ-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(6, "0")}`
@@ -303,7 +287,6 @@ function PaymentPageContent() {
         setIsProcessing(false)
         setShowReceipt(true)
       }
-
     } catch (err) {
       clearInterval(interval)
       setIsProcessing(false)
@@ -339,7 +322,7 @@ function PaymentPageContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
-      <PaymentReceiptModal 
+      <PaymentReceiptModal
         transaction={lastTransaction}
         open={showReceipt}
         onClose={handleCloseReceipt}
@@ -375,36 +358,36 @@ function PaymentPageContent() {
         <Card className="mb-6 rounded-2xl border-0 shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
-               <div className="flex gap-3">
-                 <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-[#10B981]">
-                   <FileText className="h-5 w-5" />
-                 </div>
-                 <div>
-                   <h3 className="font-semibold text-gray-900">
-                     {isQRTPayment ? "QRT ID Request" : currentRequest?.certificateType}
-                   </h3>
-                   <p className="text-sm text-gray-500">
-                     {isQRTPayment
-                       ? `${qrtRequest?.fullName || "QRT ID"} - ${qrtRequest?.requestType === "rush" ? "Rush Processing" : "Regular Processing"}`
-                       : currentRequest?.purpose}
-                   </p>
-                 </div>
-               </div>
+              <div className="flex gap-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-[#10B981]">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    {isQRTPayment ? "QRT ID Request" : currentRequest?.certificateType}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {isQRTPayment
+                      ? `${qrtRequest?.fullName || "QRT ID"} - ${qrtRequest?.requestType === "rush" ? "Rush Processing" : "Regular Processing"}`
+                      : currentRequest?.purpose}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2 border-t border-gray-100 pt-4">
-               <div className="flex justify-between text-sm">
-                 <span className="text-gray-500">{isQRTPayment ? "QRT ID Fee" : "Certificate Fee"}</span>
-                 <span className="text-gray-900">₱{certFee.toFixed(2)}</span>
-               </div>
-               <div className="flex justify-between text-sm">
-                 <span className="text-gray-500">Processing Fee</span>
-                 <span className="text-gray-900">₱{processingFee.toFixed(2)}</span>
-               </div>
-               <div className="flex justify-between items-center pt-2">
-                 <span className="font-bold text-gray-900">Total Amount</span>
-                 <span className="text-xl font-bold text-[#10B981]">₱{totalAmount.toFixed(2)}</span>
-               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">{isQRTPayment ? "QRT ID Fee" : "Certificate Fee"}</span>
+                <span className="text-gray-900">₱{certFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Processing Fee</span>
+                <span className="text-gray-900">₱{processingFee.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-bold text-gray-900">Total Amount</span>
+                <span className="text-xl font-bold text-[#10B981]">₱{totalAmount.toFixed(2)}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -419,29 +402,32 @@ function PaymentPageContent() {
 
         <Tabs defaultValue="gcash" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 p-1 rounded-xl h-12">
-            <TabsTrigger value="gcash" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">GCash</TabsTrigger>
-            <TabsTrigger value="maya" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Maya</TabsTrigger>
-            <TabsTrigger value="bank" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Bank</TabsTrigger>
+            <TabsTrigger
+              value="gcash"
+              className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              GCash
+            </TabsTrigger>
+            <TabsTrigger value="maya" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Maya
+            </TabsTrigger>
+            <TabsTrigger value="bank" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Bank
+            </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="gcash" className="mt-0">
-            <GCashForm 
-              isLoading={isProcessing} 
-              onSubmit={(data) => handlePaymentSubmit("gcash", data)} 
-            />
+            <GCashForm isLoading={isProcessing} onSubmit={(data) => handlePaymentSubmit("gcash", data)} />
           </TabsContent>
-          
+
           <TabsContent value="maya" className="mt-0">
-            <MayaForm 
-              isLoading={isProcessing} 
-              onSubmit={(data) => handlePaymentSubmit("maya", data)} 
-            />
+            <MayaForm isLoading={isProcessing} onSubmit={(data) => handlePaymentSubmit("maya", data)} />
           </TabsContent>
-          
+
           <TabsContent value="bank" className="mt-0">
-            <BankTransferForm 
-              isLoading={isProcessing} 
-              onSubmit={(data) => handlePaymentSubmit("bank_transfer", data)} 
+            <BankTransferForm
+              isLoading={isProcessing}
+              onSubmit={(data) => handlePaymentSubmit("bank_transfer", data)}
             />
           </TabsContent>
         </Tabs>
@@ -451,48 +437,6 @@ function PaymentPageContent() {
           <span>Secure 256-bit encrypted payment</span>
         </div>
       </main>
-
-      {/* Hidden QRT ID Konva Templates for Image Generation */}
-      {/* Konva stages can be hidden with display:none or opacity:0 */}
-      {/* No need for visibility:hidden since Konva renders to canvas */}
-      {isQRTPayment && qrtRequest && templateData && (
-        <div style={{
-          position: "fixed",
-          left: "-9999px",
-          top: "0",
-          pointerEvents: "none"
-        }}>
-          <QRTIDFrontKonva
-            ref={frontRef}
-            qrtCode={templateData.qrtCode}
-            verificationCode={templateData.verificationCode}
-            fullName={qrtRequest.fullName || "Test User"}
-            birthDate={qrtRequest.birthDate || "01/01/1990"}
-            address={qrtRequest.address || "Test Address"}
-            gender={qrtRequest.gender || "Male"}
-            civilStatus={qrtRequest.civilStatus || "Single"}
-            birthPlace={qrtRequest.birthPlace || "Manila"}
-            photoUrl={qrtRequest.photoUrl || ""}
-            issuedDate={templateData.issuedDate}
-          />
-          <QRTIDBackKonva
-            ref={backRef}
-            qrtCode={templateData.qrtCode}
-            verificationCode={templateData.verificationCode}
-            height={qrtRequest.height || "170cm"}
-            weight={qrtRequest.weight || "70kg"}
-            yearsResident={qrtRequest.yearsResident || 5}
-            citizenship={qrtRequest.citizenship || "Filipino"}
-            emergencyContactName={qrtRequest.emergencyContactName || "Emergency Contact"}
-            emergencyContactAddress={qrtRequest.emergencyContactAddress || "Same Address"}
-            emergencyContactPhone={qrtRequest.emergencyContactPhone || "09123456789"}
-            emergencyContactRelationship={qrtRequest.emergencyContactRelationship || "Family"}
-            qrCodeDataUrl={templateData.qrCodeDataUrl}
-            issuedDate={templateData.issuedDate}
-            expiryDate={templateData.expiryDate}
-          />
-        </div>
-      )}
     </div>
   )
 }

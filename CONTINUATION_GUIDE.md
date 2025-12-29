@@ -36,7 +36,7 @@
 
 ## Current Git State
 
-```
+\`\`\`
 Branch: main
 Modified files (Konva.js migration):
   - app/payment/page.tsx (updated to use Konva components)
@@ -60,7 +60,7 @@ Legacy files still present:
   - app/request/page.tsx
   - components/payment-methods.tsx (simplified forms)
   - lib/payment-utils.ts
-```
+\`\`\`
 
 ---
 
@@ -96,7 +96,7 @@ Legacy files still present:
 - Consistent styling with front side
 
 **Step 3: Created Konva Export Function** (`lib/qrt-id-generator-konva.ts`)
-```typescript
+\`\`\`typescript
 export async function generateQRTIDImagesKonva(
   frontStageRef: React.RefObject<Konva.Stage>,
   backStageRef: React.RefObject<Konva.Stage>
@@ -111,7 +111,7 @@ export async function generateQRTIDImagesKonva(
 
   return { frontImageUrl, backImageUrl }
 }
-```
+\`\`\`
 
 **Step 4: Updated payment/page.tsx**
 - Imported Konva components instead of template components
@@ -120,13 +120,13 @@ export async function generateQRTIDImagesKonva(
 - No need for image loading verification or retry logic
 
 **Step 5: Added New Dependencies** (`package.json`)
-```json
+\`\`\`json
 {
   "konva": "^10.0.12",
   "react-konva": "^19.2.1",
   "use-image": "^1.1.4"
 }
-```
+\`\`\`
 
 **Key Technical Differences:**
 - **No DOM visibility issues** - Konva draws to canvas, not using DOM hiding
@@ -142,9 +142,9 @@ export async function generateQRTIDImagesKonva(
 ### Test Case: Generate QRT ID with Photo (Konva.js)
 
 1. **Navigate to QRT Request Page**
-   ```
+   \`\`\`
    http://localhost:3000/qrt-id/request
-   ```
+   \`\`\`
 
 2. **Fill Form and Submit**
    - Fill all required fields including uploading a photo
@@ -248,7 +248,7 @@ export async function generateQRTIDImagesKonva(
 
 ### If System Provides Auto-Summary (Like Now)
 
-```
+\`\`\`
 1. Review the system-provided summary:
    - Conversation summary at top of context
    - Git status showing modified files
@@ -260,13 +260,13 @@ export async function generateQRTIDImagesKonva(
    "Test the QRT ID generation fix"
    or
    "What's the next step?"
-```
+\`\`\`
 
 ### If Starting Fresh Without Auto-Summary
 
 Provide this information:
 
-```
+\`\`\`
 1. Reference the conversation:
    "Continue from [date/task description]"
    or
@@ -279,25 +279,25 @@ Provide this information:
    "I tested the QRT ID generation and got this error: [error message]"
    or
    "The images are now generating! They appear on the QRT ID page."
-```
+\`\`\`
 
 ### Most Effective Context Format
 
 If restarting, provide:
 
-```
+\`\`\`
 Project: Barangay QRT ID Payment System
 Status: Just completed 6-step fix for image generation
 Files modified: app/payment/page.tsx, components/*-template.tsx, lib/qrt-id-generator.ts
 Next step: Test if QRT ID images now generate after payment
 Link to this guide: /home/user/barangayformdemo/CONTINUATION_GUIDE.md
-```
+\`\`\`
 
 ---
 
 ## Quick Command Reference
 
-```bash
+\`\`\`bash
 # Check build status
 npm run build
 
@@ -315,7 +315,7 @@ npm run type-check
 
 # Format code
 npm run format
-```
+\`\`\`
 
 ---
 
@@ -384,9 +384,9 @@ Search for these to find Konva.js implementation:
 ## Plan Mode Details
 
 If needed, the plan file is located at:
-```
+\`\`\`
 /home/user/.claude/plans/glimmering-exploring-metcalfe.md
-```
+\`\`\`
 
 This contains the detailed 6-step implementation plan with all technical decisions.
 

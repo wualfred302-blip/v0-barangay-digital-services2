@@ -11,7 +11,7 @@ import {
   FileText,
   Users,
   ShieldAlert,
-  IdCard,
+  CreditCard,
   Plus,
   Calendar,
   FileSignature,
@@ -43,10 +43,8 @@ export default function DashboardPage() {
   }
 
   const allAnnouncements = getPublishedAnnouncements()
-  const priorityAnnouncements = allAnnouncements
-    .filter((a) => a.isPinned || a.priority === "urgent")
-  const regularAnnouncements = allAnnouncements
-    .filter((a) => !priorityAnnouncements.find((p) => p.id === a.id))
+  const priorityAnnouncements = allAnnouncements.filter((a) => a.isPinned || a.priority === "urgent")
+  const regularAnnouncements = allAnnouncements.filter((a) => !priorityAnnouncements.find((p) => p.id === a.id))
 
   const handleTabChange = (value: string) => {
     if (value === "requests") {
@@ -62,7 +60,7 @@ export default function DashboardPage() {
     { icon: FileText, label: "Request Certificate", href: "/request" },
     { icon: Users, label: "Bayanihan", href: "/bayanihan" },
     { icon: ShieldAlert, label: "File Blotter", href: "/blotter" },
-    { icon: IdCard, label: "Request ID", href: "/qrt-id/request" },
+    { icon: CreditCard, label: "Request ID", href: "/qrt-id/request" },
     { icon: Plus, label: "Health Center", href: "/dashboard" },
     { icon: Calendar, label: "Events", href: "/announcements" },
     { icon: FileSignature, label: "Permits", href: "/dashboard" },
@@ -91,20 +89,20 @@ export default function DashboardPage() {
         <div className="mb-6">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="h-[44px] w-full grid grid-cols-3 bg-[#E5EAF3] p-1 rounded-full border-none">
-              <TabsTrigger 
-                value="services" 
+              <TabsTrigger
+                value="services"
                 className="rounded-full text-[14px] font-medium data-[state=active]:bg-[#3B82F6] data-[state=active]:text-white transition-all duration-200"
               >
                 Services
               </TabsTrigger>
-              <TabsTrigger 
-                value="requests" 
+              <TabsTrigger
+                value="requests"
                 className="rounded-full text-[14px] font-medium text-[#4B5563] data-[state=active]:bg-[#3B82F6] data-[state=active]:text-white transition-all duration-200"
               >
                 Requests
               </TabsTrigger>
-              <TabsTrigger 
-                value="payments" 
+              <TabsTrigger
+                value="payments"
                 className="rounded-full text-[14px] font-medium text-[#4B5563] data-[state=active]:bg-[#3B82F6] data-[state=active]:text-white transition-all duration-200"
               >
                 Payments
@@ -120,9 +118,7 @@ export default function DashboardPage() {
               <div className="flex h-12 w-12 items-center justify-center">
                 <service.icon className="h-10 w-10 text-[#325A94]" strokeWidth={1.5} />
               </div>
-              <span className="text-[12px] leading-tight font-medium text-center text-[#111827]">
-                {service.label}
-              </span>
+              <span className="text-[12px] leading-tight font-medium text-center text-[#111827]">{service.label}</span>
             </Link>
           ))}
         </div>
@@ -137,7 +133,7 @@ export default function DashboardPage() {
               <div key={ann.id} className="relative w-[280px] shrink-0 snap-start">
                 <div className="relative h-[160px] w-full overflow-hidden rounded-2xl">
                   {ann.imageUrl ? (
-                    <Image src={ann.imageUrl} alt="" fill className="object-cover" />
+                    <Image src={ann.imageUrl || "/placeholder.svg"} alt="" fill className="object-cover" />
                   ) : (
                     <div className="h-full w-full bg-[#3B82F6]" />
                   )}
@@ -155,9 +151,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-[14px] font-bold text-[#111827] leading-tight">
-                  {ann.title}
-                </p>
+                <p className="mt-2 text-[14px] font-bold text-[#111827] leading-tight">{ann.title}</p>
               </div>
             ))}
           </div>
@@ -173,7 +167,7 @@ export default function DashboardPage() {
               <div key={ann.id} className="relative w-[280px] shrink-0 snap-start">
                 <div className="relative h-[160px] w-full overflow-hidden rounded-2xl">
                   {ann.imageUrl ? (
-                    <Image src={ann.imageUrl} alt="" fill className="object-cover" />
+                    <Image src={ann.imageUrl || "/placeholder.svg"} alt="" fill className="object-cover" />
                   ) : (
                     <div className="h-full w-full bg-[#3B82F6]" />
                   )}
@@ -187,9 +181,7 @@ export default function DashboardPage() {
                     <ChevronRight className="h-4 w-4 text-[#111827]" />
                   </div>
                 </div>
-                <p className="mt-2 text-[14px] font-bold text-[#111827] leading-tight">
-                  {ann.title}
-                </p>
+                <p className="mt-2 text-[14px] font-bold text-[#111827] leading-tight">{ann.title}</p>
               </div>
             ))}
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -9,22 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  ArrowLeft,
-  Search,
-  Filter,
-  IdCard,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  LayoutGrid,
-  List,
-  Calendar,
-  User,
-  MapPin,
-  Download
-} from "lucide-react"
+import { ArrowLeft, Search, CreditCard, Clock, LayoutGrid, List, MapPin, Download } from "lucide-react"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
 
 // Mock data
@@ -37,7 +22,7 @@ const MOCK_REQUESTS = [
     status: "processing",
     requestType: "rush",
     createdAt: "2025-01-15T08:00:00",
-    photo: "/placeholder-user.jpg"
+    photo: "/placeholder-user.jpg",
   },
   {
     id: "REQ-002",
@@ -47,7 +32,7 @@ const MOCK_REQUESTS = [
     status: "ready",
     requestType: "regular",
     createdAt: "2025-01-14T10:30:00",
-    photo: "/placeholder-user.jpg"
+    photo: "/placeholder-user.jpg",
   },
   {
     id: "REQ-003",
@@ -57,11 +42,11 @@ const MOCK_REQUESTS = [
     status: "pending",
     requestType: "regular",
     createdAt: "2025-01-16T09:15:00",
-    photo: "/placeholder-user.jpg"
-  }
+    photo: "/placeholder-user.jpg",
+  },
 ]
 
-type QRTRequest = typeof MOCK_REQUESTS[0]
+type QRTRequest = (typeof MOCK_REQUESTS)[0]
 
 export default function QRTManagementPage() {
   const router = useRouter()
@@ -87,28 +72,27 @@ export default function QRTManagementPage() {
   }
 
   const filteredRequests = qrtRequests.filter((req) => {
-    const matchesSearch = 
-      (req.qrtCode?.toLowerCase().includes(search.toLowerCase()) || false) ||
+    const matchesSearch =
+      req.qrtCode?.toLowerCase().includes(search.toLowerCase()) ||
+      false ||
       req.fullName.toLowerCase().includes(search.toLowerCase()) ||
       req.address.toLowerCase().includes(search.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || req.status === statusFilter
-    const matchesType = typeFilter === 'all' || req.requestType === typeFilter
-    
+
+    const matchesStatus = statusFilter === "all" || req.status === statusFilter
+    const matchesType = typeFilter === "all" || req.requestType === typeFilter
+
     return matchesSearch && matchesStatus && matchesType
   })
 
   const stats = {
-    pending: qrtRequests.filter(r => r.status === 'pending').length,
-    processing: qrtRequests.filter(r => r.status === 'processing').length,
-    ready: qrtRequests.filter(r => r.status === 'ready').length,
-    issued: qrtRequests.filter(r => r.status === 'issued').length
+    pending: qrtRequests.filter((r) => r.status === "pending").length,
+    processing: qrtRequests.filter((r) => r.status === "processing").length,
+    ready: qrtRequests.filter((r) => r.status === "ready").length,
+    issued: qrtRequests.filter((r) => r.status === "issued").length,
   }
 
   const updateStatus = (id: string, newStatus: string) => {
-    setQrtRequests(prev => prev.map(req => 
-      req.id === id ? { ...req, status: newStatus } : req
-    ))
+    setQrtRequests((prev) => prev.map((req) => (req.id === id ? { ...req, status: newStatus } : req)))
   }
 
   return (
@@ -122,19 +106,19 @@ export default function QRTManagementPage() {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
-            <IdCard className="h-5 w-5 text-emerald-600" />
+            <CreditCard className="h-5 w-5 text-emerald-600" />
             <h1 className="text-sm font-bold text-gray-900">QRT ID Management</h1>
           </div>
           <div className="ml-auto flex bg-slate-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === "list" ? "bg-white shadow-sm text-emerald-600" : "text-gray-500"}`}
             >
               <List className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode("kanban")}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === "kanban" ? "bg-white shadow-sm text-emerald-600" : "text-gray-500"}`}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
@@ -213,12 +197,12 @@ export default function QRTManagementPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div className="relative h-10 w-10 overflow-hidden rounded-full bg-slate-100">
-                        <Image src={req.photo} alt={req.fullName} fill className="object-cover" />
+                        <Image src={req.photo || "/placeholder.svg"} alt={req.fullName} fill className="object-cover" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-gray-900">{req.fullName}</p>
-                          {req.requestType === 'rush' && (
+                          {req.requestType === "rush" && (
                             <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
                               RUSH
                             </span>
@@ -237,33 +221,33 @@ export default function QRTManagementPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col items-end gap-2">
                       <QRTStatusBadge status={req.status as any} size="sm" />
-                      
-                      {req.status === 'pending' && (
-                        <Button 
-                          size="sm" 
+
+                      {req.status === "pending" && (
+                        <Button
+                          size="sm"
                           className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => updateStatus(req.id, 'processing')}
+                          onClick={() => updateStatus(req.id, "processing")}
                         >
                           Approve
                         </Button>
                       )}
-                      {req.status === 'processing' && (
-                        <Button 
-                          size="sm" 
+                      {req.status === "processing" && (
+                        <Button
+                          size="sm"
                           className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
-                          onClick={() => updateStatus(req.id, 'ready')}
+                          onClick={() => updateStatus(req.id, "ready")}
                         >
                           Generate
                         </Button>
                       )}
-                      {req.status === 'ready' && (
-                        <Button 
-                          size="sm" 
+                      {req.status === "ready" && (
+                        <Button
+                          size="sm"
                           variant="outline"
-                          className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                          className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-transparent"
                         >
                           <Download className="mr-1 h-3 w-3" />
                           Issue
@@ -277,60 +261,65 @@ export default function QRTManagementPage() {
           </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-4">
-            {['pending', 'processing', 'ready'].map((status) => (
+            {["pending", "processing", "ready"].map((status) => (
               <div key={status} className="w-[280px] shrink-0">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase text-gray-500">{status}</h3>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                    {filteredRequests.filter(r => r.status === status).length}
+                    {filteredRequests.filter((r) => r.status === status).length}
                   </span>
                 </div>
                 <div className="space-y-2">
                   {filteredRequests
-                    .filter(r => r.status === status)
-                    .map(req => (
+                    .filter((r) => r.status === status)
+                    .map((req) => (
                       <Card key={req.id} className="border-0 shadow-sm">
                         <CardContent className="p-3">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <div className="relative h-8 w-8 overflow-hidden rounded-full bg-slate-100">
-                                <Image src={req.photo} alt={req.fullName} fill className="object-cover" />
+                                <Image
+                                  src={req.photo || "/placeholder.svg"}
+                                  alt={req.fullName}
+                                  fill
+                                  className="object-cover"
+                                />
                               </div>
                               <div>
                                 <p className="text-xs font-semibold text-gray-900">{req.fullName}</p>
                                 <p className="text-[10px] text-gray-500">{req.id}</p>
                               </div>
                             </div>
-                            {req.requestType === 'rush' && (
+                            {req.requestType === "rush" && (
                               <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
                                 RUSH
                               </span>
                             )}
                           </div>
-                          
-                          {status === 'pending' && (
-                            <Button 
-                              size="sm" 
+
+                          {status === "pending" && (
+                            <Button
+                              size="sm"
                               className="w-full h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
-                              onClick={() => updateStatus(req.id, 'processing')}
+                              onClick={() => updateStatus(req.id, "processing")}
                             >
                               Approve Request
                             </Button>
                           )}
-                          {status === 'processing' && (
-                            <Button 
-                              size="sm" 
+                          {status === "processing" && (
+                            <Button
+                              size="sm"
                               className="w-full h-7 text-xs bg-blue-600 hover:bg-blue-700"
-                              onClick={() => updateStatus(req.id, 'ready')}
+                              onClick={() => updateStatus(req.id, "ready")}
                             >
                               Generate ID
                             </Button>
                           )}
-                          {status === 'ready' && (
-                            <Button 
-                              size="sm" 
+                          {status === "ready" && (
+                            <Button
+                              size="sm"
                               variant="outline"
-                              className="w-full h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              className="w-full h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-transparent"
                             >
                               View & Issue
                             </Button>

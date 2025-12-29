@@ -6,7 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, IdCard, ChevronRight, FileText } from "lucide-react"
+import { ArrowLeft, CreditCard, ChevronRight } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useQRT } from "@/lib/qrt-context"
 import { BottomNav } from "@/components/bottom-nav"
@@ -40,11 +40,11 @@ export default function QrtIdListPage() {
 
   const filteredIds = myQrtIds.filter((item) => {
     if (filter === "all") return true
-    
+
     if (filter === "processing") {
       return ["pending", "processing"].includes(item.status)
     }
-    
+
     if (filter === "ready") {
       return ["ready", "issued"].includes(item.status)
     }
@@ -99,7 +99,7 @@ export default function QrtIdListPage() {
           <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-md">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <IdCard className="h-8 w-8 text-gray-300" />
+                <CreditCard className="h-8 w-8 text-gray-300" />
               </div>
               <p className="mb-2 text-lg font-semibold text-gray-600">No QRT IDs found</p>
               <p className="mb-6 text-sm text-gray-400 text-center">
@@ -114,7 +114,7 @@ export default function QrtIdListPage() {
           <div className="space-y-3">
             {filteredIds.map((item) => {
               const isReady = ["ready", "issued"].includes(item.status)
-              
+
               return (
                 <Link key={item.id} href={`/qrt-id/${item.id}`}>
                   <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-md transition-transform active:scale-[0.98]">
@@ -126,17 +126,18 @@ export default function QrtIdListPage() {
                             isReady ? "bg-[#10B981]/10" : "bg-orange-100",
                           )}
                         >
-                          <IdCard
-                            className={cn("h-6 w-6", isReady ? "text-[#10B981]" : "text-orange-500")}
-                          />
+                          <CreditCard className={cn("h-6 w-6", isReady ? "text-[#10B981]" : "text-orange-500")} />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">QRT ID</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              QRT ID
+                            </span>
                           </div>
                           <p className="font-semibold text-[#1A1A1A]">{item.qrtCode || "Processing..."}</p>
                           <p className="text-sm text-gray-500">
-                            Requested: {new Date(item.requestDate || item.createdAt).toLocaleDateString("en-US", {
+                            Requested:{" "}
+                            {new Date(item.requestDate || item.createdAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",

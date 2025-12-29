@@ -2,35 +2,19 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { 
-  ArrowLeft, 
-  Share2, 
-  User, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Ruler, 
-  Weight,
-  Check,
-  Printer,
-  Copy,
-  Info,
-  Clock,
-  History,
-  FileCheck
-} from "lucide-react"
+import { ArrowLeft, Share2, User, Phone, Check, Printer, Info, History } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { useAuth } from "@/lib/auth-context"
 import { useQRT } from "@/lib/qrt-context"
 import { cn } from "@/lib/utils"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
 import { IDCardPreview } from "@/components/id-card-preview"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { slideUp, fadeIn, staggerContainer } from "@/lib/animations"
+import { downloadImage } from "@/lib/qrt-id-generator-canvas"
 
 export default function QrtIdDetailPage() {
   const router = useRouter()
@@ -67,7 +51,7 @@ export default function QrtIdDetailPage() {
     const shareData = {
       title: `QRT ID - ${qrtId.fullName}`,
       text: `Verify my Barangay Mawaque QRT ID: ${qrtId.qrtCode}`,
-      url: url
+      url: url,
     }
 
     try {
@@ -79,7 +63,7 @@ export default function QrtIdDetailPage() {
         setTimeout(() => setIsCopied(false), 2000)
       }
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
+      if ((err as Error).name !== "AbortError") {
         try {
           await navigator.clipboard.writeText(url)
           setIsCopied(true)
@@ -94,9 +78,9 @@ export default function QrtIdDetailPage() {
   const handlePrint = () => {
     if (!qrtId) return
 
-    const printWindow = window.open('', '_blank', 'width=900,height=700')
+    const printWindow = window.open("", "_blank", "width=900,height=700")
     if (!printWindow) {
-      alert('Please allow popups to print your ID')
+      alert("Please allow popups to print your ID")
       return
     }
 
@@ -182,9 +166,10 @@ export default function QrtIdDetailPage() {
             <div>
               <div class="label">FRONT SIDE</div>
               <div class="id-card">
-                ${frontImage
-                  ? `<img src="${frontImage}" alt="Front of ID" />`
-                  : `<div class="id-card-placeholder">
+                ${
+                  frontImage
+                    ? `<img src="${frontImage}" alt="Front of ID" />`
+                    : `<div class="id-card-placeholder">
                       <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zM9 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6 5H6v-1c0-1.3 2.7-2 4-2s4 .7 4 2v1zm5-3h-4v-1h4v1zm0-2h-4v-1h4v1zm0-2h-4V9h4v1z"/>
                       </svg>
@@ -196,9 +181,10 @@ export default function QrtIdDetailPage() {
             <div>
               <div class="label">BACK SIDE</div>
               <div class="id-card">
-                ${backImage
-                  ? `<img src="${backImage}" alt="Back of ID" />`
-                  : `<div class="id-card-placeholder">
+                ${
+                  backImage
+                    ? `<img src="${backImage}" alt="Back of ID" />`
+                    : `<div class="id-card-placeholder">
                       <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zM4 17V7h16v10H4z"/>
                         <path d="M6 9h12v2H6zm0 3h8v2H6z"/>
@@ -212,7 +198,7 @@ export default function QrtIdDetailPage() {
           <div class="info">
             <strong>Name:</strong> ${qrtId.fullName} |
             <strong>QRT Code:</strong> ${qrtId.qrtCode} |
-            <strong>Issued:</strong> ${qrtId.issuedDate ? new Date(qrtId.issuedDate).toLocaleDateString() : 'N/A'}
+            <strong>Issued:</strong> ${qrtId.issuedDate ? new Date(qrtId.issuedDate).toLocaleDateString() : "N/A"}
           </div>
           <button class="print-btn" onclick="window.print()">Print ID Card</button>
         </body>
@@ -224,11 +210,10 @@ export default function QrtIdDetailPage() {
   const handleDownload = async () => {
     if (!qrtId) return
     try {
-      const { downloadImage } = await import("@/lib/qrt-id-generator-konva")
       if (qrtId.idFrontImageUrl) {
         downloadImage(qrtId.idFrontImageUrl, `${qrtId.qrtCode}-front.png`)
       }
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
       if (qrtId.idBackImageUrl) {
         downloadImage(qrtId.idBackImageUrl, `${qrtId.qrtCode}-back.png`)
       }
@@ -244,10 +229,10 @@ export default function QrtIdDetailPage() {
   if (authLoading || loading || !baseUrl) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F9FAFB]">
-        <motion.div 
+        <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-10 w-10 rounded-full border-4 border-emerald-500 border-t-transparent" 
+          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+          className="h-10 w-10 rounded-full border-4 border-emerald-500 border-t-transparent"
         />
       </div>
     )
@@ -260,7 +245,9 @@ export default function QrtIdDetailPage() {
           <Info className="h-10 w-10 text-red-500" />
         </div>
         <h2 className="text-xl font-black text-gray-900 mb-2">QRT ID Not Found</h2>
-        <p className="text-gray-500 mb-8 max-w-xs">The QRT ID you are looking for might have been moved or doesn't exist.</p>
+        <p className="text-gray-500 mb-8 max-w-xs">
+          The QRT ID you are looking for might have been moved or doesn't exist.
+        </p>
         <Button onClick={() => router.push("/qrt-id")} className="h-12 w-full rounded-2xl bg-emerald-600 font-bold">
           Back to Dashboard
         </Button>
@@ -274,8 +261,8 @@ export default function QrtIdDetailPage() {
     verificationCode: qrtId.verificationCode,
     fullName: qrtId.fullName,
     birthDate: qrtId.birthDate,
-    issueDate: qrtId.issuedDate || new Date().toISOString().split('T')[0],
-    verifyUrl
+    issueDate: qrtId.issuedDate || new Date().toISOString().split("T")[0],
+    verifyUrl,
   })
 
   const isReady = ["ready", "issued"].includes(qrtId.status)
@@ -284,7 +271,7 @@ export default function QrtIdDetailPage() {
     <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
       {/* Premium Header */}
       <header className="sticky top-0 z-30 flex h-16 items-center bg-white/80 backdrop-blur-xl px-4 border-b border-gray-100">
-        <button 
+        <button
           onClick={() => router.back()}
           className="mr-4 h-10 w-10 flex items-center justify-center rounded-xl hover:bg-gray-50 transition-colors"
         >
@@ -295,31 +282,25 @@ export default function QrtIdDetailPage() {
           <p className="text-lg font-black text-gray-900 truncate">{qrtId.qrtCode || "Processing"}</p>
         </div>
         <div className="flex items-center gap-2">
-           <QRTStatusBadge status={qrtId.status} />
+          <QRTStatusBadge status={qrtId.status} />
         </div>
       </header>
 
       <main className="flex-1 space-y-6 px-4 pt-6 pb-32 max-w-2xl mx-auto w-full">
-        
         {/* ID Card Experience */}
         <motion.div variants={slideUp} initial="hidden" animate="visible">
-          <IDCardPreview 
-            frontImageUrl={qrtId.idFrontImageUrl} 
-            backImageUrl={qrtId.idBackImageUrl} 
-            qrtCode={qrtId.qrtCode} 
-            fullName={qrtId.fullName} 
-            onDownload={handleDownload} 
-            isReady={isReady} 
+          <IDCardPreview
+            frontImageUrl={qrtId.idFrontImageUrl}
+            backImageUrl={qrtId.idBackImageUrl}
+            qrtCode={qrtId.qrtCode}
+            fullName={qrtId.fullName}
+            onDownload={handleDownload}
+            isReady={isReady}
           />
         </motion.div>
 
         {/* Action Grid */}
-        <motion.div 
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-2 gap-3"
-        >
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 gap-3">
           <motion.div variants={fadeIn}>
             <Button
               variant="outline"
@@ -396,7 +377,9 @@ export default function QrtIdDetailPage() {
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Sex / Status</p>
-                <p className="text-sm font-bold text-gray-900">{qrtId.gender} • {qrtId.civilStatus}</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {qrtId.gender} • {qrtId.civilStatus}
+                </p>
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Height</p>
@@ -428,19 +411,21 @@ export default function QrtIdDetailPage() {
                 </div>
                 <div>
                   <p className="text-base font-bold text-gray-900">{qrtId.emergencyContactName}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{qrtId.emergencyContactRelationship}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    {qrtId.emergencyContactRelationship}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 pl-1">
                 <div>
-                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Phone</p>
-                   <a href={`tel:${qrtId.emergencyContactPhone}`} className="text-sm font-bold text-emerald-600">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Phone</p>
+                  <a href={`tel:${qrtId.emergencyContactPhone}`} className="text-sm font-bold text-emerald-600">
                     {qrtId.emergencyContactPhone}
-                   </a>
+                  </a>
                 </div>
                 <div>
-                   <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Address</p>
-                   <p className="text-[11px] font-bold text-gray-900 leading-tight">{qrtId.emergencyContactAddress}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Address</p>
+                  <p className="text-[11px] font-bold text-gray-900 leading-tight">{qrtId.emergencyContactAddress}</p>
                 </div>
               </div>
             </CardContent>
@@ -462,19 +447,32 @@ export default function QrtIdDetailPage() {
                   <div className="flex-1 pt-0">
                     <p className="text-sm font-bold text-gray-900">Application Submitted</p>
                     <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-0.5">
-                      {new Date(qrtId.requestDate || qrtId.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {new Date(qrtId.requestDate || qrtId.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                 </div>
 
                 {/* Step 2 */}
                 <div className="relative flex items-start gap-6">
-                  <div className={cn(
-                    "absolute left-[-2px] h-4 w-4 rounded-full shadow-sm z-10 transition-colors duration-500",
-                    isReady || qrtId.status === "processing" ? "bg-emerald-500 ring-4 ring-emerald-50" : "bg-gray-200 ring-4 ring-gray-50"
-                  )} />
+                  <div
+                    className={cn(
+                      "absolute left-[-2px] h-4 w-4 rounded-full shadow-sm z-10 transition-colors duration-500",
+                      isReady || qrtId.status === "processing"
+                        ? "bg-emerald-500 ring-4 ring-emerald-50"
+                        : "bg-gray-200 ring-4 ring-gray-50",
+                    )}
+                  />
                   <div className="flex-1 pt-0">
-                    <p className={cn("text-sm font-bold", isReady || qrtId.status === "processing" ? "text-gray-900" : "text-gray-400")}>
+                    <p
+                      className={cn(
+                        "text-sm font-bold",
+                        isReady || qrtId.status === "processing" ? "text-gray-900" : "text-gray-400",
+                      )}
+                    >
                       Verification & Processing
                     </p>
                     <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-0.5">
@@ -485,15 +483,23 @@ export default function QrtIdDetailPage() {
 
                 {/* Step 3 */}
                 <div className="relative flex items-start gap-6">
-                  <div className={cn(
-                    "absolute left-[-2px] h-4 w-4 rounded-full shadow-sm z-10 transition-colors duration-500",
-                    isReady ? "bg-emerald-500 ring-4 ring-emerald-50" : "bg-gray-200 ring-4 ring-gray-50"
-                  )} />
+                  <div
+                    className={cn(
+                      "absolute left-[-2px] h-4 w-4 rounded-full shadow-sm z-10 transition-colors duration-500",
+                      isReady ? "bg-emerald-500 ring-4 ring-emerald-50" : "bg-gray-200 ring-4 ring-gray-50",
+                    )}
+                  />
                   <div className="flex-1 pt-0">
-                    <p className={cn("text-sm font-bold", isReady ? "text-gray-900" : "text-gray-400")}>ID Generated & Issued</p>
+                    <p className={cn("text-sm font-bold", isReady ? "text-gray-900" : "text-gray-400")}>
+                      ID Generated & Issued
+                    </p>
                     {isReady && qrtId.issuedDate && (
                       <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mt-0.5">
-                        {new Date(qrtId.issuedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {new Date(qrtId.issuedDate).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </p>
                     )}
                   </div>
@@ -502,13 +508,12 @@ export default function QrtIdDetailPage() {
             </CardContent>
           </Card>
         </motion.div>
-
       </main>
 
       {/* Footer Branding */}
       <footer className="py-12 flex flex-col items-center justify-center opacity-30 grayscale">
-         <Image src="/images/logo.png" alt="Seal" width={40} height={40} className="mb-2" />
-         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-900">Official Barangay QRT System</p>
+        <Image src="/images/logo.png" alt="Seal" width={40} height={40} className="mb-2" />
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-900">Official Barangay QRT System</p>
       </footer>
     </div>
   )
