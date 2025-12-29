@@ -24,7 +24,7 @@ import {
   Calendar,
   MoreHorizontal
 } from "lucide-react"
-import { QRScanner } from "@/components/qr-scanner"
+import { LiveQRScanner } from "@/components/live-qr-scanner"
 import { QRTStatusBadge } from "@/components/qrt-status-badge"
 import { motion, AnimatePresence } from "framer-motion"
 import { slideUp, fadeIn, staggerContainer, scaleIn } from "@/lib/animations"
@@ -336,9 +336,9 @@ export default function QRTVerifyPage() {
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-[32px] blur opacity-20 group-hover:opacity-30 transition-all duration-500" />
                 <div className="relative">
-                  <QRScanner 
-                    onScan={handleQRScan} 
-                    onError={(err) => console.error(err)} 
+                  <LiveQRScanner
+                    onScan={handleQRScan}
+                    onError={(err) => console.error(err)}
                   />
                 </div>
               </div>

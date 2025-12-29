@@ -13,7 +13,7 @@ import { useQRT } from "@/lib/qrt-context"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { QRScanner } from "@/components/qr-scanner"
+import { LiveQRScanner } from "@/components/live-qr-scanner"
 import { QRTIDRequest } from "@/lib/qrt-types"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
@@ -420,22 +420,9 @@ export default function CaptainDashboard() {
                   </Button>
                 </DialogHeader>
                 
-                <div className="relative aspect-square max-w-sm mx-auto overflow-hidden rounded-2xl border-4 border-emerald-100 bg-emerald-50">
-                  <QRScanner onScan={handleQRScan} onError={handleScanError} />
-                  
-                  {/* Animated Scan Line */}
-                  <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-scan-line pointer-events-none" />
-                  
-                  {/* Corner Markers */}
-                  <div className="absolute top-4 left-4 h-8 w-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-lg" />
-                  <div className="absolute top-4 right-4 h-8 w-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-lg" />
-                  <div className="absolute bottom-4 left-4 h-8 w-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-lg" />
-                  <div className="absolute bottom-4 right-4 h-8 w-8 border-b-4 border-r-4 border-emerald-500 rounded-br-lg" />
+                <div className="relative max-w-sm mx-auto overflow-hidden rounded-2xl">
+                  <LiveQRScanner onScan={handleQRScan} onError={handleScanError} />
                 </div>
-                
-                <p className="mt-6 text-center text-xs text-gray-500 font-medium">
-                  Center the QR code within the frame to scan
-                </p>
               </motion.div>
             ) : scanError ? (
               <motion.div

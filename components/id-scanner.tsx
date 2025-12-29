@@ -67,46 +67,62 @@ export function IDScanner({ onDataExtracted, disabled }: IDScannerProps) {
         setProgress((prev) => Math.min(prev + 5, 85))
       }, 200)
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
-      })
+      // Add timeout for the API request (30 seconds)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      clearInterval(progressInterval)
+      try {
+        const response = await fetch("/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64 }),
+          signal: controller.signal,
+        })
 
-      let result
-      const contentType = response.headers.get("content-type")
-      if (contentType && contentType.includes("application/json")) {
-        result = await response.json()
-      } else {
-        const text = await response.text()
-        throw new Error(text || "Server returned an invalid response")
-      }
+        clearTimeout(timeoutId)
 
-      if (result.success) {
-        setProgress(90)
-        setStatusMessage("Filling form...")
+        let result
+        const contentType = response.headers.get("content-type")
+        if (contentType && contentType.includes("application/json")) {
+          result = await response.json()
+        } else {
+          const text = await response.text()
+          throw new Error(text || "Server returned an invalid response")
+        }
 
-        onDataExtracted(result.data)
+        if (result.success) {
+          setProgress(90)
+          setStatusMessage("Filling form...")
 
-        setProgress(100)
-        setShowSuccess(true)
+          onDataExtracted(result.data)
 
-        setTimeout(() => {
-          setIsProcessing(false)
-          setShowSuccess(false)
-          setProgress(0)
-        }, 1500)
-      } else {
-        throw new Error(result.error || "Failed to process ID")
+          setProgress(100)
+          setShowSuccess(true)
+
+          setTimeout(() => {
+            setIsProcessing(false)
+            setShowSuccess(false)
+            setProgress(0)
+            setStatusMessage("")
+          }, 1500)
+        } else {
+          throw new Error(result.error || "Failed to process ID")
+        }
+      } finally {
+        // Always clear the progress interval
+        clearInterval(progressInterval)
       }
     } catch (error: any) {
       console.error("Scan failed:", error)
       setIsProcessing(false)
       setProgress(0)
+      setStatusMessage("")
 
-      alert(error.message || "Failed to scan ID. Please try again or fill manually.")
+      const message = error.name === "AbortError"
+        ? "Request timed out. Please try again."
+        : (error.message || "Failed to scan ID. Please try again or fill manually.")
+
+      alert(message)
     }
 
     e.target.value = ""
