@@ -30,9 +30,11 @@ export default function QrtIdListPage() {
 
   useEffect(() => {
     const loadQRTIds = async () => {
+      console.log("[v0] QRT List Page: Loading QRT IDs...")
       setIsRefreshing(true)
       await refreshQRTIds()
       setIsRefreshing(false)
+      console.log("[v0] QRT List Page: Loaded", qrtIds.length, "QRT IDs")
     }
     loadQRTIds()
   }, [refreshQRTIds])
@@ -46,6 +48,8 @@ export default function QrtIdListPage() {
   }
 
   const myQrtIds = user?.id ? getUserQRTIds(user.id) : qrtIds
+
+  console.log("[v0] QRT List Page: Displaying", myQrtIds.length, "QRT IDs for user", user?.id)
 
   const filteredIds = myQrtIds.filter((item) => {
     if (filter === "all") return true
@@ -146,7 +150,7 @@ export default function QrtIdListPage() {
                           <p className="font-semibold text-[#1A1A1A]">{item.qrtCode || "Processing..."}</p>
                           <p className="text-sm text-gray-500">
                             Requested:{" "}
-                            {new Date(item.requestDate || item.createdAt).toLocaleDateString("en-US", {
+                            {new Date(item.createdAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",

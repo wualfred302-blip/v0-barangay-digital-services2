@@ -6,6 +6,8 @@ export type QRTRequestType = "regular" | "rush"
 
 export interface QRTPersonalInfo {
   fullName: string
+  email: string
+  phoneNumber: string
   birthDate: string
   age: number
   gender: string

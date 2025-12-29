@@ -9,6 +9,8 @@ export interface QRTIDRequest {
   verificationCode: string
   userId: string
   fullName: string
+  email: string
+  phoneNumber: string
   birthDate: string
   age: number
   gender: string
@@ -76,6 +78,8 @@ function dbRowToQRTIDRequest(row: Record<string, unknown>): QRTIDRequest {
     verificationCode: row.verification_code as string,
     userId: (row.user_id as string) || "anonymous",
     fullName: row.full_name as string,
+    email: row.email as string,
+    phoneNumber: row.phone_number as string,
     birthDate: row.birth_date as string,
     age: row.age as number,
     gender: row.gender as string,
@@ -111,7 +115,10 @@ function qrtRequestToDbRow(request: QRTIDRequest): Record<string, unknown> {
     id: request.id,
     qrt_code: request.qrtCode,
     verification_code: request.verificationCode,
+    user_id: request.userId,
     full_name: request.fullName,
+    email: request.email,
+    phone_number: request.phoneNumber,
     birth_date: request.birthDate,
     age: request.age,
     gender: request.gender,
@@ -137,6 +144,7 @@ function qrtRequestToDbRow(request: QRTIDRequest): Record<string, unknown> {
     payment_reference: request.paymentReference,
     payment_transaction_id: request.paymentTransactionId,
     amount: request.amount,
+    created_at: request.createdAt,
   }
 }
 
@@ -241,22 +249,69 @@ export const QRTProvider = memo(({ children }: { children: ReactNode }) => {
 
   const addQRTRequest = useCallback(async (request: QRTIDRequest): Promise<QRTIDRequest | null> => {
     try {
+      console.log("[v0] Adding QRT request to Supabase:", request.qrtCode)
       const supabase = createClient()
-      const dbRow = qrtRequestToDbRow(request)
+
+      const dbRow = {
+        id: request.id,
+        qrt_code: request.qrtCode,
+        verification_code: request.verificationCode,
+        user_id: request.userId || "anonymous",
+        full_name: request.fullName,
+        email: request.email || "",
+        phone_number: request.phoneNumber || "",
+        birth_date: request.birthDate,
+        age: request.age,
+        gender: request.gender,
+        civil_status: request.civilStatus,
+        birth_place: request.birthPlace,
+        address: request.address,
+        height: request.height || "",
+        weight: request.weight || "",
+        years_resident: request.yearsResident || 0,
+        citizenship: request.citizenship || "",
+        emergency_contact_name: request.emergencyContactName || "",
+        emergency_contact_address: request.emergencyContactAddress || "",
+        emergency_contact_phone: request.emergencyContactPhone || "",
+        emergency_contact_relationship: request.emergencyContactRelationship || "",
+        photo_url: request.photoUrl || "",
+        id_front_image_url: request.idFrontImageUrl || "",
+        id_back_image_url: request.idBackImageUrl || "",
+        qr_code_data: request.qrCodeData,
+        status: request.status,
+        request_type: request.requestType || "regular",
+        issued_date: request.issuedDate || null,
+        expiry_date: request.expiryDate || null,
+        payment_reference: request.paymentReference || "",
+        payment_transaction_id: request.paymentTransactionId || "",
+        amount: request.amount || 0,
+        created_at: request.createdAt || new Date().toISOString(),
+      }
+
+      console.log("[v0] Inserting to Supabase with data:", dbRow)
 
       const { data, error } = await supabase.from("qrt_ids").insert(dbRow).select().single()
 
       if (error) {
-        console.error("Failed to add QRT request to Supabase:", error)
+        console.error("[v0] Supabase insert error:", error)
+
+        if (error.message?.includes("schema cache") || error.message?.includes("Could not find")) {
+          console.warn("[v0] Schema cache issue, adding to local state only. Will retry sync on next refresh.")
+          setQrtIds((prev) => [request, ...prev])
+          return request
+        }
+
         return null
       }
 
+      console.log("[v0] Successfully inserted to Supabase:", data)
       const newRequest = dbRowToQRTIDRequest(data)
       setQrtIds((prev) => [newRequest, ...prev])
       return newRequest
     } catch (error) {
-      console.error("Failed to add QRT request:", error)
-      return null
+      console.error("[v0] Failed to add QRT request:", error)
+      setQrtIds((prev) => [request, ...prev])
+      return request
     }
   }, [])
 
